@@ -21,7 +21,7 @@ help:
 	@echo "  make clean-config   - Clean only container-generated config files"
 	@echo ""
 	@echo "Testing:"
-	@echo "  make test                - Run all tests in parallel"
+	@echo "  make test                - Run all tests (unit, integration, e2e, ui)"
 	@echo "  make test:unit           - Run all unit tests (logic + mock) in parallel"
 	@echo "  make test:unit:logic     - Run logic unit tests only"
 	@echo "  make test:unit:mock      - Run mock unit tests only"
@@ -132,8 +132,14 @@ healthcheck:
 
 # Testing commands
 test:
-	@echo "Running all tests in parallel..."
-	.venv/bin/pytest tests/ -n auto -q
+	@echo "Running all tests (unit, integration, e2e, ui)..."
+	@echo "Note: UI tests run separately due to Docker requirements"
+	.venv/bin/pytest tests/unit tests/integration -n auto -q --ignore=tests/e2e/docker
+	@echo ""
+	@echo "Running e2e tests in Docker..."
+	@$(MAKE) test:e2e
+	@echo "Running UI tests in Docker..."
+	@$(MAKE) test:ui
 
 test\:unit:
 	@echo "Running all unit tests in parallel..."
@@ -151,29 +157,81 @@ test\:integration:
 	@echo "Running integration tests..."
 	.venv/bin/pytest tests/integration -n 2 -q
 
-test\:ui: stop
-	@echo "Starting fresh Home Assistant for UI tests..."
-	@$(MAKE) start
-	@echo "Running UI tests in parallel..."
-	@.venv/bin/pytest tests/ui -n 2 -q || (echo "Tests failed, stopping Home Assistant..." && $(MAKE) stop && exit 1)
-	@echo "UI tests completed, stopping Home Assistant..."
-	@$(MAKE) stop
+# UI tests (Docker-based)
+test\:ui:
+	@echo "Running UI tests in Docker..."
+	@START_TIME=$$(date +%s); \
+	echo "Cleaning up any existing test containers..."; \
+	docker ps -a --filter "name=home-assistant-test-" --format "{{.Names}}" | xargs -r docker rm -f 2>/dev/null || true; \
+	docker-compose -f tests/ui/docker/docker-compose.yml down --volumes --remove-orphans; \
+	echo "Starting fresh UI test run..."; \
+	docker-compose -f tests/ui/docker/docker-compose.yml run --rm home-assistant-test-runner-ui || EXIT_CODE=$$?; \
+	echo "Cleaning up test containers..."; \
+	docker ps -a --filter "name=home-assistant-test-" --format "{{.Names}}" | xargs -r docker rm -f 2>/dev/null || true; \
+	docker-compose -f tests/ui/docker/docker-compose.yml down --volumes --remove-orphans; \
+	END_TIME=$$(date +%s); \
+	DURATION=$$((END_TIME - START_TIME)); \
+	echo ""; \
+	echo "=========================================="; \
+	echo "UI tests completed in $$DURATION seconds"; \
+	if [ -f reports/.last_report ]; then \
+		REPORT_FILE=$$(cat reports/.last_report | grep "REPORT_FILE=" | cut -d'=' -f2); \
+		echo "Test report saved: reports/$$REPORT_FILE"; \
+	else \
+		echo "Test reports saved in: reports/"; \
+	fi; \
+	echo "=========================================="; \
+	exit $$EXIT_CODE
 
-test\:ui\:headed: stop
-	@echo "Starting fresh Home Assistant for UI tests..."
-	@$(MAKE) start
-	@echo "Running UI tests with visible browser..."
-	@.venv/bin/pytest tests/ui --headed -n 2 -v || (echo "Tests failed, stopping Home Assistant..." && $(MAKE) stop && exit 1)
-	@echo "UI tests completed, stopping Home Assistant..."
-	@$(MAKE) stop
+test\:ui\:headed:
+	@echo "Running UI tests with visible browser in Docker..."
+	@START_TIME=$$(date +%s); \
+	echo "Cleaning up any existing test containers..."; \
+	docker ps -a --filter "name=home-assistant-test-" --format "{{.Names}}" | xargs -r docker rm -f 2>/dev/null || true; \
+	docker-compose -f tests/ui/docker/docker-compose.yml down --volumes --remove-orphans; \
+	echo "Starting fresh UI test run with headed mode..."; \
+	HEADED=true docker-compose -f tests/ui/docker/docker-compose.yml run --rm home-assistant-test-runner-ui || EXIT_CODE=$$?; \
+	echo "Cleaning up test containers..."; \
+	docker ps -a --filter "name=home-assistant-test-" --format "{{.Names}}" | xargs -r docker rm -f 2>/dev/null || true; \
+	docker-compose -f tests/ui/docker/docker-compose.yml down --volumes --remove-orphans; \
+	END_TIME=$$(date +%s); \
+	DURATION=$$((END_TIME - START_TIME)); \
+	echo ""; \
+	echo "=========================================="; \
+	echo "UI tests (headed) completed in $$DURATION seconds"; \
+	if [ -f reports/.last_report ]; then \
+		REPORT_FILE=$$(cat reports/.last_report | grep "REPORT_FILE=" | cut -d'=' -f2); \
+		echo "Test report saved: reports/$$REPORT_FILE"; \
+	else \
+		echo "Test reports saved in: reports/"; \
+	fi; \
+	echo "=========================================="; \
+	exit $$EXIT_CODE
 
-test\:ui\:debug: stop
-	@echo "Starting fresh Home Assistant for UI tests..."
-	@$(MAKE) start
-	@echo "Running UI tests in debug mode (single worker)..."
-	@.venv/bin/pytest tests/ui --headed --slowmo=1000 -n 0 -v || (echo "Tests failed, stopping Home Assistant..." && $(MAKE) stop && exit 1)
-	@echo "UI tests completed, stopping Home Assistant..."
-	@$(MAKE) stop
+test\:ui\:debug:
+	@echo "Running UI tests in debug mode with visible browser in Docker..."
+	@START_TIME=$$(date +%s); \
+	echo "Cleaning up any existing test containers..."; \
+	docker ps -a --filter "name=home-assistant-test-" --format "{{.Names}}" | xargs -r docker rm -f 2>/dev/null || true; \
+	docker-compose -f tests/ui/docker/docker-compose.yml down --volumes --remove-orphans; \
+	echo "Starting fresh UI test run in debug mode..."; \
+	HEADED=true DEBUG=true SLOWMO=1000 docker-compose -f tests/ui/docker/docker-compose.yml run --rm home-assistant-test-runner-ui || EXIT_CODE=$$?; \
+	echo "Cleaning up test containers..."; \
+	docker ps -a --filter "name=home-assistant-test-" --format "{{.Names}}" | xargs -r docker rm -f 2>/dev/null || true; \
+	docker-compose -f tests/ui/docker/docker-compose.yml down --volumes --remove-orphans; \
+	END_TIME=$$(date +%s); \
+	DURATION=$$((END_TIME - START_TIME)); \
+	echo ""; \
+	echo "=========================================="; \
+	echo "UI tests (debug) completed in $$DURATION seconds"; \
+	if [ -f reports/.last_report ]; then \
+		REPORT_FILE=$$(cat reports/.last_report | grep "REPORT_FILE=" | cut -d'=' -f2); \
+		echo "Test report saved: reports/$$REPORT_FILE"; \
+	else \
+		echo "Test reports saved in: reports/"; \
+	fi; \
+	echo "=========================================="; \
+	exit $$EXIT_CODE
 
 # E2E tests
 test\:e2e:
