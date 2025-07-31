@@ -7,7 +7,7 @@ from pathlib import Path
 
 def test_persons_yaml_is_valid():
     """Test that persons.yaml is valid YAML and contains expected persons."""
-    yaml_path = Path(__file__).parent.parent / "docker/config/persons.yaml"
+    yaml_path = Path(__file__).parent.parent / "e2e/docker/config/persons.yaml"
     
     # Load the persons config
     with open(yaml_path, 'r') as f:
@@ -36,7 +36,7 @@ def test_persons_yaml_is_valid():
 
 def test_persons_config_structure():
     """Test that persons config has valid structure for Home Assistant."""
-    yaml_path = Path(__file__).parent.parent / "docker/config/persons.yaml"
+    yaml_path = Path(__file__).parent.parent / "e2e/docker/config/persons.yaml"
     
     with open(yaml_path, 'r') as f:
         persons_config = yaml.safe_load(f)
@@ -54,7 +54,7 @@ def test_persons_config_structure():
 
 def test_all_required_fields_present():
     """Test that all persons have required fields."""
-    yaml_path = Path(__file__).parent.parent / "docker/config/persons.yaml"
+    yaml_path = Path(__file__).parent.parent / "e2e/docker/config/persons.yaml"
     
     with open(yaml_path, 'r') as f:
         persons_config = yaml.safe_load(f)
