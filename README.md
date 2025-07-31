@@ -170,6 +170,14 @@ make env-update
 deactivate
 ```
 
+## CI/CD
+
+This project uses GitHub Actions for continuous integration:
+
+- **E2E Tests**: Automatically run on every pull request
+- **Required Checks**: E2E tests must pass before merging
+- **Test Reports**: Results are saved as artifacts in GitHub Actions
+
 ## Project Structure
 
 ```
