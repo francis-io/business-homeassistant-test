@@ -57,7 +57,26 @@ make lint                   # Run flake8, mypy, black --check
 make format                 # Format with black and isort
 make coverage               # Generate coverage report
 make clean                  # Clean containers and artifacts
+
+# Pre-commit hooks (enforced on all commits)
+make pre-commit-install     # Setup pre-commit (first time only)
+make pre-commit-run         # Run all checks manually
+make pre-commit-update      # Update hooks to latest versions
 ```
+
+### Pre-commit Requirements
+This project uses pre-commit hooks to enforce code quality. Key checks include:
+- **Security**: detect-secrets, gitleaks, bandit
+- **Type Safety**: mypy --strict for HA compatibility
+- **Code Quality**: black, isort, flake8 with pytest/async plugins
+- **Test Integrity**: pytest collection validation
+- **Custom Validators**: Test structure, automation logic, HA mock consistency
+
+**Important for AI-generated code**:
+- Business logic must go in `tests/helpers/automation_logic.py`, not test files
+- Logic tests cannot import Home Assistant components
+- Mock tests must use `ha_mocks` helpers
+- All code must pass strict type checking for HA compatibility
 
 ## Architecture Overview
 

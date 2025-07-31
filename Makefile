@@ -40,6 +40,11 @@ help:
 	@echo "  make format         - Format code"
 	@echo "  make validate-config - Validate Home Assistant YAML configuration"
 	@echo ""
+	@echo "Pre-commit Hooks:"
+	@echo "  make pre-commit-install - Setup pre-commit hooks (first time)"
+	@echo "  make pre-commit-run    - Run pre-commit on all files"
+	@echo "  make pre-commit-update - Update hooks to latest versions"
+	@echo ""
 	@echo "Python Environment Management (UV):"
 	@echo "  make env-update     - Update all dependencies"
 	@echo "  make env-clean      - Remove Python environment"
@@ -342,6 +347,19 @@ format:
 	@echo "Formatting code..."
 	.venv/bin/black tests/
 	.venv/bin/isort tests/ --skip tests/unit/test_time_based_light.py --skip tests/unit/test_notification.py --skip tests/unit/test_zone_entry.py
+
+# Pre-commit hooks
+pre-commit-install:
+	@echo "Setting up pre-commit hooks..."
+	./scripts/setup-pre-commit.sh
+
+pre-commit-run:
+	@echo "Running pre-commit on all files..."
+	.venv/bin/pre-commit run --all-files
+
+pre-commit-update:
+	@echo "Updating pre-commit hooks to latest versions..."
+	.venv/bin/pre-commit autoupdate
 
 # Validate Home Assistant configuration
 validate-config:
