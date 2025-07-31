@@ -1,9 +1,9 @@
 # Minimal Home Assistant Configuration - Bypass Onboarding
 homeassistant:
   name: Home
-  latitude: 40.7128
-  longitude: -74.0060
-  elevation: 10
+  latitude: 0
+  longitude: 0
+  elevation: 0
   unit_system: metric
   time_zone: UTC
   country: US
@@ -16,24 +16,23 @@ homeassistant:
         - 127.0.0.1       # localhost
         - ::1             # IPv6 localhost
         - 172.16.0.0/12   # Docker default network range
-        - 192.168.0.0/16  # Common local network range
       allow_bypass_login: true
-    - type: homeassistant  # Keep as fallback for external access
+    - type: homeassistant  # Keep for onboarding process
 
 # Minimal components - comment out default_config to avoid unnecessary components
-# default_config:
+default_config:
 
-# Core components only
-config:
-system_health:
-logger:
-  default: warning
+# # Core components only
+# config:
+# system_health:
+# logger:
+#   default: warning
 
-# API access (required for many operations)
-api:
+# # API access (required for many operations)
+# api:
 
-# Frontend (required to access the UI)
-frontend:
+# # Frontend (required to access the UI)
+# frontend:
 
-# Required for the onboarding process
-onboarding:
+# # Required for the onboarding process
+# onboarding:

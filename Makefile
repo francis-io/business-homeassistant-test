@@ -29,6 +29,7 @@ help:
 	@echo "  make test:ui             - Run UI tests in parallel"
 	@echo "  make test:ui:headed      - Run UI tests with visible browser"
 	@echo "  make test:ui:debug       - Run UI tests in debug mode"
+	@echo "  make test:e2e            - Run E2E tests"
 	@echo ""
 	@echo "Development:"
 	@echo "  make logs           - Show Home Assistant logs"
@@ -57,7 +58,7 @@ setup:
 	uv pip install -r tests/requirements.txt
 	@echo "Creating necessary directories..."
 	# TODO: why this?
-	mkdir -p reports tests/docker/config/.storage
+	mkdir -p reports tests/e2e/docker/config/.storage
 	@echo "Setting up bypass authentication..."
 	# TODO: why this?
 	./scripts/switch_auth_mode.sh bypass
@@ -87,15 +88,15 @@ setup-all: setup
 # Docker commands
 build:
 	@echo "Building Docker containers..."
-	docker-compose -f tests/docker/docker-compose.yml build
+	docker-compose -f tests/e2e/docker/docker-compose.yml build
 
 start:
 	@echo "Starting Home Assistant..."
-	docker-compose -f tests/docker/docker-compose.yml up -d homeassistant
+	docker-compose -f tests/e2e/docker/docker-compose.yml up -d homeassistant
 	@echo "Waiting for Home Assistant to be healthy..."
 	@timeout=60; \
 	while [ $$timeout -gt 0 ]; do \
-		if docker-compose -f tests/docker/docker-compose.yml ps homeassistant | grep -q "healthy"; then \
+		if docker-compose -f tests/e2e/docker/docker-compose.yml ps homeassistant | grep -q "healthy"; then \
 			echo "✅ Home Assistant is healthy and running at http://localhost:8123"; \
 			exit 0; \
 		fi; \
@@ -104,28 +105,28 @@ start:
 		timeout=$$((timeout - 5)); \
 	done; \
 	echo "❌ Error: Home Assistant failed to become healthy within 60 seconds"; \
-	docker-compose -f tests/docker/docker-compose.yml logs --tail=50 homeassistant; \
+	docker-compose -f tests/e2e/docker/docker-compose.yml logs --tail=50 homeassistant; \
 	exit 1
 
 stop:
 	@echo "Stopping and removing all containers..."
-	docker-compose -f tests/docker/docker-compose.yml down --remove-orphans
+	docker-compose -f tests/e2e/docker/docker-compose.yml down --remove-orphans
 
 restart: stop start
 
 # Start with clean volumes (removes all HA data)
 start-clean: stop
 	@echo "Removing Home Assistant volumes..."
-	docker-compose -f tests/docker/docker-compose.yml down -v
+	docker-compose -f tests/e2e/docker/docker-compose.yml down -v
 	@$(MAKE) start
 
 # Check if Home Assistant is healthy
 healthcheck:
-	@if docker-compose -f tests/docker/docker-compose.yml ps homeassistant 2>/dev/null | grep -q "healthy"; then \
+	@if docker-compose -f tests/e2e/docker/docker-compose.yml ps homeassistant 2>/dev/null | grep -q "healthy"; then \
 		echo "✅ Home Assistant is healthy"; \
 	else \
 		echo "❌ Home Assistant is not healthy"; \
-		docker-compose -f tests/docker/docker-compose.yml ps homeassistant; \
+		docker-compose -f tests/e2e/docker/docker-compose.yml ps homeassistant; \
 		exit 1; \
 	fi
 
@@ -174,18 +175,44 @@ test\:ui\:debug: stop
 	@echo "UI tests completed, stopping Home Assistant..."
 	@$(MAKE) stop
 
+# E2E tests
+test\:e2e:
+	@echo "Running E2E tests..."
+	@START_TIME=$$(date +%s); \
+	echo "Cleaning up any existing test containers..."; \
+	docker ps -a --filter "name=home-assistant-test-" --format "{{.Names}}" | xargs -r docker rm -f 2>/dev/null || true; \
+	docker-compose -f tests/e2e/docker/docker-compose.yml down --volumes --remove-orphans; \
+	echo "Starting fresh E2E test run..."; \
+	docker-compose -f tests/e2e/docker/docker-compose.yml run --rm home-assistant-test-runner-e2e || EXIT_CODE=$$?; \
+	echo "Cleaning up test containers..."; \
+	docker ps -a --filter "name=home-assistant-test-" --format "{{.Names}}" | xargs -r docker rm -f 2>/dev/null || true; \
+	docker-compose -f tests/e2e/docker/docker-compose.yml down --volumes --remove-orphans; \
+	END_TIME=$$(date +%s); \
+	DURATION=$$((END_TIME - START_TIME)); \
+	echo ""; \
+	echo "=========================================="; \
+	echo "E2E tests completed in $$DURATION seconds"; \
+	if [ -f reports/.last_report ]; then \
+		REPORT_FILE=$$(cat reports/.last_report | grep "REPORT_FILE=" | cut -d'=' -f2); \
+		echo "Test report saved: reports/$$REPORT_FILE"; \
+	else \
+		echo "Test reports saved in: reports/"; \
+	fi; \
+	echo "=========================================="; \
+	exit $$EXIT_CODE
+
 # Development tools
 logs:
 	@echo "Showing Home Assistant logs..."
-	docker-compose -f tests/docker/docker-compose.yml logs -f homeassistant
+	docker-compose -f tests/e2e/docker/docker-compose.yml logs -f homeassistant
 
 shell:
 	@echo "Opening shell in test runner container..."
-	docker-compose -f tests/docker/docker-compose.yml run --rm test_runner /bin/bash
+	docker-compose -f tests/e2e/docker/docker-compose.yml run --rm test_runner /bin/bash
 
 ha-shell:
 	@echo "Opening shell in Home Assistant container..."
-	docker-compose -f tests/docker/docker-compose.yml exec homeassistant /bin/bash
+	docker-compose -f tests/e2e/docker/docker-compose.yml exec homeassistant /bin/bash
 
 # Python environment commands (UV managed)
 env-shell:
@@ -225,15 +252,15 @@ format:
 # Validate Home Assistant configuration
 validate-config:
 	@echo "Validating Home Assistant configuration files..."
-	@if ! docker-compose -f tests/docker/docker-compose.yml ps homeassistant 2>/dev/null | grep -q "Up"; then \
+	@if ! docker-compose -f tests/e2e/docker/docker-compose.yml ps homeassistant 2>/dev/null | grep -q "Up"; then \
 		echo "Starting temporary Home Assistant container for validation..."; \
 		docker run --rm \
-			-v $$(pwd)/tests/docker/config:/config:ro \
+			-v $$(pwd)/tests/e2e/docker/config:/config:ro \
 			homeassistant/home-assistant:stable \
 			python -m homeassistant --config /config --script check_config; \
 	else \
 		echo "Using running Home Assistant container for validation..."; \
-		docker-compose -f tests/docker/docker-compose.yml exec -T homeassistant \
+		docker-compose -f tests/e2e/docker/docker-compose.yml exec -T homeassistant \
 			python -m homeassistant --config /config --script check_config; \
 	fi
 
@@ -241,7 +268,7 @@ validate-config:
 # Cleanup
 clean:
 	@echo "Cleaning up..."
-	docker-compose -f tests/docker/docker-compose.yml down -v
+	docker-compose -f tests/e2e/docker/docker-compose.yml down -v
 	rm -rf reports/* .pytest_cache .coverage
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
 	find . -type f -name "*.pyc" -delete
@@ -251,33 +278,33 @@ clean:
 # Clean only config directory (keep containers)
 clean-config:
 	@echo "Cleaning container-generated config files..."
-	@if [ -d "tests/docker/config/.storage" ]; then \
-		if rm -rf tests/docker/config/.storage 2>/dev/null; then \
+	@if [ -d "tests/e2e/docker/config/.storage" ]; then \
+		if rm -rf tests/e2e/docker/config/.storage 2>/dev/null; then \
 			echo "Removed .storage directory"; \
 		else \
 			echo "Warning: Could not remove .storage directory (may need sudo)"; \
 		fi; \
 	fi
-	@rm -rf tests/docker/config/deps 2>/dev/null || true
-	@rm -rf tests/docker/config/tts 2>/dev/null || true
-	@rm -f tests/docker/config/*.log tests/docker/config/*.log.* 2>/dev/null || true
-	@rm -f tests/docker/config/*.txt 2>/dev/null || true
-	@rm -f tests/docker/config/.HA_VERSION 2>/dev/null || true
-	@rm -f tests/docker/config/home-assistant_v2.db* 2>/dev/null || true
+	@rm -rf tests/e2e/docker/config/deps 2>/dev/null || true
+	@rm -rf tests/e2e/docker/config/tts 2>/dev/null || true
+	@rm -f tests/e2e/docker/config/*.log tests/e2e/docker/config/*.log.* 2>/dev/null || true
+	@rm -f tests/e2e/docker/config/*.txt 2>/dev/null || true
+	@rm -f tests/e2e/docker/config/.HA_VERSION 2>/dev/null || true
+	@rm -f tests/e2e/docker/config/home-assistant_v2.db* 2>/dev/null || true
 
 
 # Docker compose shortcuts
 dc-up:
-	docker-compose -f tests/docker/docker-compose.yml up -d
+	docker-compose -f tests/e2e/docker/docker-compose.yml up -d
 
 dc-down:
-	docker-compose -f tests/docker/docker-compose.yml down
+	docker-compose -f tests/e2e/docker/docker-compose.yml down
 
 dc-logs:
-	docker-compose -f tests/docker/docker-compose.yml logs -f
+	docker-compose -f tests/e2e/docker/docker-compose.yml logs -f
 
 dc-ps:
-	docker-compose -f tests/docker/docker-compose.yml ps
+	docker-compose -f tests/e2e/docker/docker-compose.yml ps
 
 # Authentication management
 auth-bypass:

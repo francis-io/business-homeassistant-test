@@ -1,0 +1,62 @@
+services:
+  home-assistant-test-config-validator:
+    container_name: "${NAME_PREFIX}-config-validator"
+    image: "${HA_IMAGE}"
+    volumes:
+      - ./config:/config:ro
+    command: ["python", "-m", "homeassistant", "--config", "/config", "--script", "check_config"]
+    restart: "no"
+
+  home-assistant-test-server:
+    container_name: "${NAME_PREFIX}-server"
+    image: "${HA_IMAGE}"
+    volumes:
+      - ./config:/config-source:ro
+    ports:
+      - "${HA_PORT}:${HA_PORT}"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${HA_PORT}"]
+      interval: 1s
+      timeout: 5s
+      retries: 30
+      start_period: 1s
+    command: >
+      sh -c "cp -r /config-source/* /config/ 2>/dev/null || true &&
+             python -m homeassistant"
+    restart: "no"
+
+  home-assistant-test-onboarding:  # Run onboarding and wait until complete
+    container_name: "${NAME_PREFIX}-onboarding"
+    image: "${HA_IMAGE}"
+    depends_on:
+      home-assistant-test-server:
+        condition: service_healthy
+      home-assistant-test-config-validator:
+        condition: service_completed_successfully
+    volumes:
+      - ./scripts:/scripts:ro
+    environment:
+      - HA_URL=http://${SERVER_CONTAINER}:${HA_PORT}
+    command: ["python", "/scripts/onboarding_and_test.py"]
+    restart: "no"
+
+  home-assistant-test-runner-e2e:
+    container_name: "${NAME_PREFIX}-runner-e2e"
+    image: "${HA_IMAGE}"
+    depends_on:
+      home-assistant-test-onboarding:
+        condition: service_completed_successfully
+    volumes:
+      - ../../..:/workspace:ro
+      - ../../../reports:/reports
+    working_dir: /workspace
+    environment:
+      - HA_URL=http://${SERVER_CONTAINER}:${HA_PORT}
+      #- TZ=UTC
+    command: >
+      sh -c "TIMESTAMP=$$(date '+%Y%m%d_%H%M%S') &&
+             REPORT_FILE=\"e2e_$${TIMESTAMP}_results.xml\" &&
+             echo \"Running E2E tests at $$(date '+%Y-%m-%d %H:%M:%S')...\" &&
+             python -m pytest tests/e2e -v --tb=long --ignore=tests/e2e/docker --junit-xml=/reports/$${REPORT_FILE} &&
+             echo \"REPORT_FILE=$${REPORT_FILE}\" > /reports/.last_report"
+    restart: "no"

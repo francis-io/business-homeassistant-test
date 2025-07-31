@@ -51,6 +51,7 @@ coverage.xml
 .pytest_cache/
 cover/
 reports/
+.last_report
 
 # Translations
 *.mo
@@ -136,7 +137,6 @@ celerybeat.pid
 *.sage.py
 
 # Environments
-.env
 .envrc
 .venv
 env/

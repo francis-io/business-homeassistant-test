@@ -1,13 +1,12 @@
-# Test Persons
-
+# Person entities for testing
 - name: John
   id: john
+  user_id: test_user_john
   device_trackers:
     - device_tracker.johns_phone
-  user_id: test_user_john
 
 - name: Test User
   id: test_user
+  user_id: test_user_id
   device_trackers:
     - device_tracker.test_phone
-  user_id: test_user_id

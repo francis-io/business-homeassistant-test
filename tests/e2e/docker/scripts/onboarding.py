@@ -5,6 +5,7 @@ import time
 import logging
 from urllib.parse import urlparse
 import os
+import sys
 
 # ------------------ CLI Argument Parsing ------------------
 parser = argparse.ArgumentParser(description="Home Assistant onboarding script")
@@ -212,9 +213,11 @@ def main():
     final = get_status()
     if all(s["done"] for s in final):
         log.info(f"Onboarding complete. Credentials: {USERNAME} / {PASSWORD}")
+        sys.exit(0)  # Success
     else:
         remaining = [s["step"] for s in final if not s["done"]]
         log.warning(f"Onboarding incomplete. Remaining steps: {remaining}")
+        sys.exit(1)  # Failure
 
 if __name__ == "__main__":
     main()

@@ -90,7 +90,7 @@ This framework implements a unique **logic-first** testing approach with three d
 - Tests are organized by **testing approach** (unit/logic, unit/mock, integration) rather than by feature
 - Pure business logic is extracted into testable functions in `automation_logic.py`
 - Each automation scenario has corresponding test files across all test levels
-- Configuration files are in `tests/docker/config/` for containerized HA testing
+- Configuration files are in `tests/e2e/docker/config/` for containerized HA testing
 
 ### Key Technical Details
 
@@ -102,7 +102,7 @@ This framework implements a unique **logic-first** testing approach with three d
 
 **Coverage**: HTML reports generated in `reports/unit_coverage/`
 
-**Docker Configuration**: Uses `tests/docker/docker-compose.yml` with Home Assistant 2024.1.0
+**Docker Configuration**: Uses `tests/e2e/docker/docker-compose.yml` with Home Assistant 2024.1.0
 
 ## Testing Best Practices
 
