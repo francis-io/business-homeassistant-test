@@ -11,16 +11,19 @@ This Terraform configuration creates a GitHub repository for the Business Home A
 ## Usage
 
 1. Initialize Terraform:
+
    ```bash
    terraform init
    ```
 
-2. Review the planned changes:
+1. Review the planned changes:
+
    ```bash
    terraform plan
    ```
 
-3. Apply the configuration:
+1. Apply the configuration:
+
    ```bash
    terraform apply
    ```
@@ -28,6 +31,7 @@ This Terraform configuration creates a GitHub repository for the Business Home A
 ## Configuration
 
 The configuration will create:
+
 - Repository name: `business-homeassistant-test`
 - Owner: `francis-io`
 - Visibility: Public (change in `main.tf` if you want private)
@@ -37,6 +41,7 @@ The configuration will create:
 ## Authentication
 
 This configuration uses the GitHub CLI token for authentication. Make sure you're logged in with:
+
 ```bash
 gh auth status
 ```
@@ -44,6 +49,7 @@ gh auth status
 ## Outputs
 
 After applying, you'll get:
+
 - `repository_url`: The web URL of the repository
 - `clone_url_ssh`: SSH clone URL
 - `clone_url_https`: HTTPS clone URL

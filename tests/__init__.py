@@ -1,1 +1,1 @@
-# Home Assistant Test Suite
+"""Home Assistant automation test suite."""

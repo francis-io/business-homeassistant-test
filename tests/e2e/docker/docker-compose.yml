@@ -1,3 +1,4 @@
+---
 services:
   home-assistant-test-config-validator:
     container_name: "${NAME_PREFIX}-config-validator"
@@ -52,7 +53,7 @@ services:
     working_dir: /workspace
     environment:
       - HA_URL=http://${SERVER_CONTAINER}:${HA_PORT}
-      #- TZ=UTC
+      # - TZ=UTC
     command: >
       sh -c "TIMESTAMP=$$(date '+%Y%m%d_%H%M%S') &&
              REPORT_FILE=\"e2e_$${TIMESTAMP}_results.xml\" &&

@@ -1,8 +1,8 @@
 """E2E test configuration and fixtures."""
+
 import os
+
 import pytest
-import time
-from typing import Generator
 
 
 @pytest.fixture(scope="session")
@@ -23,25 +23,22 @@ def ha_url(docker_compose_setup):
 @pytest.fixture(scope="session")
 def ha_credentials():
     """Provide the default credentials created by onboarding."""
-    return {
-        "username": "admin",
-        "password": "admin"
-    }
+    return {"username": "admin", "password": "admin"}
 
 
 @pytest.fixture
-def authenticated_session(ha_url, ha_credentials):
+def authenticated_session(ha_url):
     """Create an authenticated session for API tests."""
     import requests
 
     session = requests.Session()
 
     # Login to get auth token
-    login_data = {
-        "username": ha_credentials["username"],
-        "password": ha_credentials["password"],
-        "client_id": ha_url
-    }
+    # login_data = {
+    #     "username": ha_credentials["username"],
+    #     "password": ha_credentials["password"],
+    #     "client_id": ha_url,
+    # }
 
     # Note: You may need to implement proper auth flow here
     # For now, return the session as-is since we have trusted networks

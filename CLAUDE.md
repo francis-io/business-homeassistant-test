@@ -12,10 +12,11 @@ This project recommends using these MCP (Model Context Protocol) servers for enh
 ## Development Commands
 
 ### Setup and Environment
+
 ```bash
 # Create Python environment and install dependencies
 make setup                   # Base test dependencies
-make setup-integration      # + integration test dependencies  
+make setup-integration      # + integration test dependencies
 make setup-all              # All dependencies including E2E
 
 # Python environment management
@@ -25,6 +26,7 @@ make env-clean              # Remove Python environment
 ```
 
 ### Testing Commands
+
 ```bash
 # Primary test commands (all use parallel execution)
 make test                   # Run all available tests
@@ -39,6 +41,7 @@ make test:integration        # Integration tests (no Docker needed)
 ```
 
 ### Docker and Home Assistant
+
 ```bash
 make build                  # Build Docker containers
 make start                  # Start Home Assistant at http://localhost:8123
@@ -52,6 +55,7 @@ make ha-shell              # Shell into HA container
 ```
 
 ### Code Quality
+
 ```bash
 make lint                   # Run flake8, mypy, black --check
 make format                 # Format with black and isort
@@ -65,7 +69,9 @@ make pre-commit-update      # Update hooks to latest versions
 ```
 
 ### Pre-commit Requirements
+
 This project uses pre-commit hooks to enforce code quality. Key checks include:
+
 - **Security**: detect-secrets, gitleaks, bandit
 - **Type Safety**: mypy --strict for HA compatibility
 - **Code Quality**: black, isort, flake8 with pytest/async plugins
@@ -73,6 +79,7 @@ This project uses pre-commit hooks to enforce code quality. Key checks include:
 - **Custom Validators**: Test structure, automation logic, HA mock consistency
 
 **Important for AI-generated code**:
+
 - Business logic must go in `tests/helpers/automation_logic.py`, not test files
 - Logic tests cannot import Home Assistant components
 - Mock tests must use `ha_mocks` helpers
@@ -81,31 +88,36 @@ This project uses pre-commit hooks to enforce code quality. Key checks include:
 ## Architecture Overview
 
 ### Multi-Level Testing Strategy
+
 This framework implements a unique **logic-first** testing approach with three distinct levels:
 
 1. **Logic Tests** (`tests/unit/logic/`) - Test pure Python business logic functions without Home Assistant
-2. **Mock Tests** (`tests/unit/mock/`) - Test automation behavior using mocked HA components  
-3. **Integration Tests** (`tests/integration/`) - Test real Home Assistant automations in containers
+1. **Mock Tests** (`tests/unit/mock/`) - Test automation behavior using mocked HA components
+1. **Integration Tests** (`tests/integration/`) - Test real Home Assistant automations in containers
 
 ### Core Components
 
 **Pure Logic Functions** (`tests/helpers/automation_logic.py`):
+
 - `should_turn_on_evening_lights()` - Time/sunset-based light logic
 - `calculate_brightness_for_time()` - Brightness calculations by hour
 - `should_send_water_leak_notification()` - Leak detection logic
 - `should_trigger_zone_entry_actions()` - Zone entry automation logic
 
 **Test Helpers**:
+
 - `tests/helpers/ha_mocks.py` - Mock Home Assistant components and services
 - `tests/helpers/fast_ha_test.py` - Minimal HA instance for integration tests
 - `tests/helpers/auth.py` - Authentication utilities for API testing
 
 **Automation Scenarios** (all have logic, mock, and integration test variants):
+
 - **Time-Based Lights**: Sunset/sunrise lighting with brightness control
 - **Notification System**: Water leak alerts, mobile notifications
 - **Zone Entry**: Location-based automations (lights, climate, notifications)
 
 ### Project Structure Philosophy
+
 - Tests are organized by **testing approach** (unit/logic, unit/mock, integration) rather than by feature
 - Pure business logic is extracted into testable functions in `automation_logic.py`
 - Each automation scenario has corresponding test files across all test levels
@@ -126,17 +138,19 @@ This framework implements a unique **logic-first** testing approach with three d
 ## Testing Best Practices
 
 ### Writing New Tests
+
 1. **Extract Logic First**: Create pure Python functions in `automation_logic.py`
-2. **Test Logic**: Write fast unit tests for the extracted functions
-3. **Test Behavior**: Add mock tests to verify HA service calls and state changes
-4. **Test Integration**: Add integration tests for end-to-end validation
+1. **Test Logic**: Write fast unit tests for the extracted functions
+1. **Test Behavior**: Add mock tests to verify HA service calls and state changes
+1. **Test Integration**: Add integration tests for end-to-end validation
 
 ### Running Specific Tests
+
 ```bash
 # Test specific automation logic
 pytest tests/unit/logic/test_time_based_light_logic.py -v
 
-# Test specific scenario across all levels  
+# Test specific scenario across all levels
 pytest -k "evening_lights" -v
 
 # Debug single test
@@ -144,8 +158,9 @@ pytest tests/unit/logic/test_time_based_light_logic.py::test_brightness_calculat
 ```
 
 ### Development Workflow
+
 1. Use `make setup` for initial environment
-2. Develop and test logic functions first (`make test:unit:logic`)
-3. Add mock tests for HA integration behavior (`make test:unit:mock`)  
-4. Use `make start` and integration tests for end-to-end validation
-5. Run `make lint` and `make format` before commits
+1. Develop and test logic functions first (`make test:unit:logic`)
+1. Add mock tests for HA integration behavior (`make test:unit:mock`)
+1. Use `make start` and integration tests for end-to-end validation
+1. Run `make lint` and `make format` before commits

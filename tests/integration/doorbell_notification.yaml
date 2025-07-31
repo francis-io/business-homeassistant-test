@@ -1,3 +1,4 @@
+---
 id: smart_doorbell_notification
 alias: Smart Doorbell Notification
 description: Send notifications with snapshot when doorbell pressed, with DND respect
@@ -15,7 +16,7 @@ trigger:
 condition:
   - condition: template
     value_template: >
-      {{ not is_state('input_boolean.do_not_disturb', 'on') or 
+      {{ not is_state('input_boolean.do_not_disturb', 'on') or
          (now().hour < 22 and now().hour >= 8) }}
 action:
   - parallel:
@@ -24,8 +25,8 @@ action:
         target:
           entity_id: camera.front_door
         data:
-          filename: /tmp/doorbell_{{ now().strftime('%Y%m%d_%H%M%S') }}.jpg
-      
+          filename: /config/www/snapshots/doorbell_{{ now().strftime('%Y%m%d_%H%M%S') }}.jpg
+
       # Flash lights if home
       - choose:
           - conditions:
@@ -35,12 +36,12 @@ action:
             sequence:
               - service: light.turn_on
                 target:
-                  entity_id: 
+                  entity_id:
                     - light.hallway
                     - light.entrance
                 data:
                   flash: short
-      
+
       # Send notifications
       - service: notify.all_devices
         data:
@@ -63,7 +64,7 @@ action:
                 title: "Speak"
               - action: "IGNORE"
                 title: "Ignore"
-      
+
       # Announce on speakers if not in DND
       - choose:
           - conditions:
@@ -80,7 +81,7 @@ action:
                 data:
                   message: "Someone is at the front door"
                   cache: true
-      
+
       # Log the event
       - service: logbook.log
         data:

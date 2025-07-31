@@ -9,11 +9,13 @@ The docker-compose.yml orchestrates a complete Home Assistant testing environmen
 ## Service Architecture
 
 ### 1. Configuration Validator (`home-assistant-config-validator`)
+
 - **Purpose**: Validates configuration.yaml before Home Assistant starts
 - **Runs**: Once at startup, exits after validation
 - **Prevents**: Home Assistant from starting with invalid configuration
 
 ### 2. Home Assistant (`home-assistant`)
+
 - **Purpose**: The main Home Assistant instance
 - **Depends on**: Configuration validator must complete successfully
 - **Port**: 8123 (exposed to host)
@@ -21,18 +23,20 @@ The docker-compose.yml orchestrates a complete Home Assistant testing environmen
 - **State**: Considered healthy when HTTP endpoint responds
 
 ### 3. Onboarding and Readiness (`home-assistant-test-onboarding-and-ready`)
+
 - **Purpose**: Automatically completes onboarding and validates system readiness
 - **Depends on**: Home Assistant must be healthy
 - **Creates**: Default admin user (admin/admin)
-- **Scripts**: 
+- **Scripts**:
   - `onboarding.py` handles the onboarding flow
   - `test_onboarding_complete.py` validates system is ready
   - `onboarding_and_test.py` orchestrates both scripts
 
 ### 4. E2E Test Runner (`home-assistant-test-runner-e2e`)
+
 - **Purpose**: Runs pytest E2E tests in isolated container
 - **Depends on**: Onboarding and readiness must complete successfully
-- **Environment**: 
+- **Environment**:
   - `HA_URL=http://home-assistant:8123` - Internal Docker network URL
   - Tests access Home Assistant via Docker networking
 - **Output**: JUnit XML results saved to test-results/
@@ -42,7 +46,7 @@ The docker-compose.yml orchestrates a complete Home Assistant testing environmen
 ```
 1. Configuration Validator
    ↓ (validates config)
-2. Home Assistant 
+2. Home Assistant
    ↓ (waits for healthy)
 3. Onboarding and Readiness
    ↓ (creates admin user + verifies system)
@@ -53,17 +57,20 @@ The docker-compose.yml orchestrates a complete Home Assistant testing environmen
 ## Key Features
 
 ### Dependency Management
+
 - Uses `depends_on` with conditions:
   - `service_completed_successfully` - Previous service must exit with code 0
   - `service_healthy` - Service must pass health checks
 - Ensures proper startup order without manual orchestration
 
 ### Network Isolation
+
 - All services run on the same Docker network
 - Services communicate using container names (e.g., `http://home-assistant:8123`)
 - No need for localhost or external IPs
 
 ### Volume Mounts
+
 - `./config:/config:ro` - Configuration directory with configuration.yaml
 - `./scripts:/scripts:ro` - Scripts directory containing:
   - `onboarding.py` - Automatic setup script
@@ -73,15 +80,18 @@ The docker-compose.yml orchestrates a complete Home Assistant testing environmen
 - `../../../test-results` - Test output directory
 
 ### Test Execution
+
 The E2E test runner:
+
 1. Installs pytest (already in the HA image)
-2. Changes to /workspace directory
-3. Runs: `python -m pytest tests/e2e -v --tb=short --junit-xml=/test-results/e2e-results.xml`
-4. Saves results for CI/CD integration
+1. Changes to /workspace directory
+1. Runs: `python -m pytest tests/e2e -v --tb=short --junit-xml=/test-results/e2e-results.xml`
+1. Saves results for CI/CD integration
 
 ## Usage
 
 ### Run E2E Tests
+
 ```bash
 # From project root
 make test:e2e
@@ -93,11 +103,13 @@ docker-compose -f tests/e2e/docker/docker-compose.yml run --rm home-assistant-te
 ### Debugging
 
 View logs for any service:
+
 ```bash
 docker-compose -f tests/e2e/docker/docker-compose.yml logs [service-name]
 ```
 
 Check service status:
+
 ```bash
 docker-compose -f tests/e2e/docker/docker-compose.yml ps
 ```

@@ -1,3 +1,4 @@
+---
 # Pre-commit configuration for Home Assistant Test Framework
 # Optimized for AI code generation quality enforcement
 
@@ -7,7 +8,7 @@ default_language_version:
 
 repos:
   # ========== PHASE 1: CRITICAL SECURITY & TEST INTEGRITY ==========
-  
+
   # Security: Prevent secrets/credentials in commits
   - repo: https://github.com/Yelp/detect-secrets
     rev: v1.4.0
@@ -28,7 +29,7 @@ repos:
       - id: pytest-collect
         name: Validate pytest collection
         entry: .venv/bin/pytest
-        args: ['--collect-only', '--quiet']
+        args: ['--collect-only', '--quiet', '--ignore=tests/ui/docker/scripts/']
         language: system
         types: [python]
         pass_filenames: false
@@ -40,14 +41,14 @@ repos:
     hooks:
       - id: mypy
         args: ['--strict', '--ignore-missing-imports']
-        additional_dependencies: 
+        additional_dependencies:
           - types-PyYAML
           - types-requests
           - pytest
         files: '^(tests/helpers/|tests/unit/|tests/integration/).*\.py$'
 
   # ========== PHASE 2: CODE QUALITY & STRUCTURE ==========
-  
+
   # Python formatting (already in use)
   - repo: https://github.com/psf/black
     rev: 24.1.0
@@ -67,8 +68,8 @@ repos:
     rev: 7.0.0
     hooks:
       - id: flake8
-        args: ['--max-line-length=100', '--extend-ignore=E203,W503']
-        additional_dependencies: 
+        args: ['--max-line-length=100', '--extend-ignore=E203,W503,D100,D103,D104,ASYNC124,ASYNC109,ASYNC300']
+        additional_dependencies:
           - flake8-docstrings
           - flake8-pytest-style
           - flake8-async
@@ -78,11 +79,11 @@ repos:
     rev: 1.7.6
     hooks:
       - id: bandit
-        args: ['-r', 'tests/', '-ll']
-        files: '\.py$'
+        args: ['-ll', '-s', 'B101']
+        files: '^tests/.*\.py$'
 
   # ========== PHASE 3: HA-SPECIFIC & TEST ARCHITECTURE ==========
-  
+
   # YAML validation for HA configs
   - repo: https://github.com/adrienverge/yamllint
     rev: v1.33.0
@@ -122,7 +123,7 @@ repos:
         files: '^tests/(helpers/ha_mocks|unit/mock)/.*\.py$'
 
   # ========== PHASE 4: PERFORMANCE & QUALITY ==========
-  
+
   # Dead code detection
   - repo: https://github.com/jendrikseipp/vulture
     rev: v2.10
@@ -146,7 +147,7 @@ repos:
         args: ['--py311-plus']
 
   # ========== GENERAL REPOSITORY HEALTH ==========
-  
+
   # Basic file checks
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.5.0

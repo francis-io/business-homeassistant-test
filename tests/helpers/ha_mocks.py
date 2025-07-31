@@ -1,95 +1,105 @@
 """Mock Home Assistant components for testing without HA installation."""
 
 import asyncio
-from typing import Any, Dict, Optional
-from unittest.mock import MagicMock, Mock
+from typing import Any, Optional
+from unittest.mock import Mock
 
 
 class MockHomeAssistant:
     """Mock Home Assistant core."""
 
-    def __init__(self):
+    def __init__(self) -> None:
+        """Initialize MockHomeAssistant instance."""
         self.states = MockStates()
         self.services = MockServices()
         self.config_entries = Mock()
-        self.data = {}
+        self.data: dict[str, Any] = {}
         self.bus = Mock()
-        self.components = set()
-        self.automations = []
+        self.components: set[str] = set()
+        self.automations: list[dict[str, Any]] = []
         self.hass = self  # Self reference for compatibility
 
-    async def async_block_till_done(self):
+    async def async_block_till_done(self) -> None:
         """Mock waiting for async operations."""
         await asyncio.sleep(0)
 
-    def async_create_task(self, coro):
+    def async_create_task(self, coro: Any) -> asyncio.Task[Any]:
         """Mock task creation."""
         return asyncio.create_task(coro)
-    
-    async def add_automation(self, config: Dict[str, Any]):
+
+    async def add_automation(self, config: dict[str, Any]) -> None:
         """Add an automation."""
         self.automations.append(config)
-        automation_id = config.get('id', config.get('alias', 'unnamed'))
+        automation_id = config.get("id", config.get("alias", "unnamed"))
         entity_id = f"automation.{automation_id}"
         self.states.async_set(entity_id, STATE_ON)
         self.data[entity_id] = config
-    
-    async def trigger_automation(self, automation_id: str, skip_condition: bool = False):
+
+    async def trigger_automation(self, automation_id: str, skip_condition: bool = False) -> None:
         """Trigger an automation by ID."""
-        entity_id = f"automation.{automation_id}"
-        
+        # entity_id = f"automation.{automation_id}"  # Reserved for future use
+
         # Find the automation config
         config = None
         for auto in self.automations:
-            if auto.get('id') == automation_id or auto.get('alias') == automation_id:
+            if auto.get("id") == automation_id or auto.get("alias") == automation_id:
                 config = auto
                 break
-        
+
         if config:
             # Execute actions
-            action = config.get('action', [])
+            action = config.get("action", [])
             if isinstance(action, dict):
                 action = [action]
-            
+
             for act in action:
-                service = act.get('service', '')
-                if '.' in service:
-                    domain, service_name = service.split('.', 1)
-                    
+                service = act.get("service", "")
+                if "." in service:
+                    domain, service_name = service.split(".", 1)
+
                     # Handle common services
-                    if service == 'light.turn_on':
-                        entities = act.get('target', {}).get('entity_id', [])
+                    if service == "light.turn_on":
+                        entities = act.get("target", {}).get("entity_id", [])
                         if isinstance(entities, str):
                             entities = [entities]
                         for entity in entities:
-                            self.states.async_set(entity, 'on')
-                    elif service == 'light.turn_off':
-                        entities = act.get('target', {}).get('entity_id', [])
+                            self.states.async_set(entity, "on")
+                    elif service == "light.turn_off":
+                        entities = act.get("target", {}).get("entity_id", [])
                         if isinstance(entities, str):
                             entities = [entities]
                         for entity in entities:
-                            self.states.async_set(entity, 'off')
-                    
+                            self.states.async_set(entity, "off")
+
                     # Call the service
                     await self.services.async_call(
-                        domain, service_name, 
-                        act.get('data', {}),
-                        blocking=True
+                        domain,
+                        service_name,
+                        act.get("data", {}),
+                        blocking=True,
                     )
-    
-    async def set_state(self, entity_id: str, state: str, attributes: Optional[Dict] = None):
+
+    async def set_state(
+        self,
+        entity_id: str,
+        state: str,
+        attributes: dict[str, Any] | None = None,
+    ) -> None:
         """Set entity state."""
         self.states.async_set(entity_id, state, attributes)
         await self.async_block_till_done()
-    
-    def get_state(self, entity_id: str):
+
+    def get_state(self, entity_id: str) -> str | None:
         """Get entity state."""
         state = self.states.get(entity_id)
         return state.state if state else None
-    
-    async def wait_for_state(self, entity_id: str, expected_state: str, timeout: float = 5.0):
+
+    async def wait_for_state(
+        self, entity_id: str, expected_state: str, timeout: float = 5.0
+    ) -> bool:
         """Wait for entity to reach expected state."""
         import time
+
         start = time.time()
         while time.time() - start < timeout:
             if self.get_state(entity_id) == expected_state:
@@ -101,22 +111,33 @@ class MockHomeAssistant:
 class MockStates:
     """Mock state management."""
 
-    def __init__(self):
-        self._states = {}
+    def __init__(self) -> None:
+        """Initialize MockStates instance."""
+        self._states: dict[str, MockState] = {}
 
-    def async_set(self, entity_id: str, state: str, attributes: Optional[Dict] = None):
+    def async_set(
+        self,
+        entity_id: str,
+        state: str,
+        attributes: dict[str, Any] | None = None,
+    ) -> None:
         """Set entity state."""
         self._states[entity_id] = MockState(entity_id, state, attributes or {})
-    
-    def set(self, entity_id: str, state: str, attributes: Optional[Dict] = None):
+
+    def set(
+        self,
+        entity_id: str,
+        state: str,
+        attributes: dict[str, Any] | None = None,
+    ) -> None:
         """Set entity state (synchronous version)."""
         self._states[entity_id] = MockState(entity_id, state, attributes or {})
 
-    def get(self, entity_id: str):
+    def get(self, entity_id: str) -> Optional["MockState"]:
         """Get entity state."""
         return self._states.get(entity_id)
 
-    def async_remove(self, entity_id: str):
+    def async_remove(self, entity_id: str) -> None:
         """Remove entity."""
         self._states.pop(entity_id, None)
 
@@ -124,20 +145,31 @@ class MockStates:
 class MockState:
     """Mock entity state."""
 
-    def __init__(self, entity_id: str, state: str, attributes: Dict):
+    def __init__(self, entity_id: str, state: str, attributes: dict[str, Any]) -> None:
+        """Initialize MockState with entity details."""
+        from datetime import datetime
+
         self.entity_id = entity_id
         self.state = state
         self.attributes = attributes
+        self.last_changed = datetime.now()
+        self.last_updated = datetime.now()
+        self.context = {
+            "user_id": None,
+            "parent_id": None,
+            "id": "mock_context",
+        }
 
 
 class MockServices:
     """Mock service management."""
 
-    def __init__(self):
-        self._services = {}
-        self._calls = []
+    def __init__(self) -> None:
+        """Initialize MockServices instance."""
+        self._services: dict[str, dict[str, Any]] = {}
+        self._calls: list[MockServiceCall] = []
 
-    def async_register(self, domain: str, service: str, handler):
+    def async_register(self, domain: str, service: str, handler: Any) -> None:
         """Register a service."""
         if domain not in self._services:
             self._services[domain] = {}
@@ -147,12 +179,16 @@ class MockServices:
         self,
         domain: str,
         service: str,
-        data: Optional[Dict] = None,
+        data: dict[str, Any] | None = None,
         blocking: bool = False,
-    ):
+    ) -> None:
         """Call a service."""
         call = MockServiceCall(domain, service, data or {})
         self._calls.append(call)
+
+        # If blocking is True, we would normally wait for the service to complete
+        # For mocking purposes, we just record the call immediately
+        _ = blocking  # Acknowledge the parameter
 
         # Call the handler if registered
         if domain in self._services and service in self._services[domain]:
@@ -161,12 +197,12 @@ class MockServices:
                 await handler(call)
             else:
                 handler(call)
-    
-    def call(self, domain: str, service: str, data: Optional[Dict] = None):
+
+    def call(self, domain: str, service: str, data: dict[str, Any] | None = None) -> None:
         """Call a service (synchronous version)."""
         call = MockServiceCall(domain, service, data or {})
         self._calls.append(call)
-        
+
         # Call the handler if registered
         if domain in self._services and service in self._services[domain]:
             handler = self._services[domain][service]
@@ -177,7 +213,8 @@ class MockServices:
 class MockServiceCall:
     """Mock service call."""
 
-    def __init__(self, domain: str, service: str, data: Dict):
+    def __init__(self, domain: str, service: str, data: dict[str, Any]) -> None:
+        """Initialize MockServiceCall with service details."""
         self.domain = domain
         self.service = service
         self.data = data
@@ -193,7 +230,7 @@ ATTR_ENTITY_ID = "entity_id"
 
 # Mock setup function
 async def async_setup_component(
-    hass: MockHomeAssistant, domain: str, config: Dict
+    hass: MockHomeAssistant, domain: str, config: dict[str, Any]
 ) -> bool:
     """Mock component setup."""
     hass.components.add(domain)
@@ -212,7 +249,7 @@ async def async_setup_component(
     return True
 
 
-async def setup_automation(hass: MockHomeAssistant, config: Dict):
+async def setup_automation(hass: MockHomeAssistant, config: dict[str, Any]) -> None:
     """Set up a mock automation."""
     automation_id = config.get("alias", "unnamed").lower().replace(" ", "_")
     entity_id = f"automation.{automation_id}"
@@ -224,10 +261,10 @@ async def setup_automation(hass: MockHomeAssistant, config: Dict):
     hass.states.async_set(entity_id, STATE_ON)
 
     # Register trigger service
-    async def trigger_automation(call):
+    async def trigger_automation(call: MockServiceCall) -> None:
         """Trigger the automation."""
         target_entity = call.data.get(ATTR_ENTITY_ID)
-        if target_entity == entity_id or entity_id in target_entity:
+        if target_entity and (target_entity == entity_id or entity_id in target_entity):
             # Execute actions
             action = config.get("action", {})
             if isinstance(action, dict):
@@ -239,7 +276,7 @@ async def setup_automation(hass: MockHomeAssistant, config: Dict):
     hass.services.async_register("automation", "trigger", trigger_automation)
 
 
-async def execute_action(hass: MockHomeAssistant, action: Dict):
+async def execute_action(hass: MockHomeAssistant, action: dict[str, Any]) -> None:
     """Execute an automation action."""
     service = action.get("service", "")
     if "." in service:

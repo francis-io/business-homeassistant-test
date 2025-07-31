@@ -9,13 +9,14 @@ UI tests run in Docker containers, ensuring consistent environments across diffe
 ## Running UI Tests
 
 All UI tests run in Docker containers with the following workflow:
+
 1. Clean up any existing test containers
-2. Validate Home Assistant configuration
-3. Start fresh Home Assistant instance
-4. Complete onboarding automatically
-5. Run UI tests with Playwright
-6. Generate timestamped test reports
-7. Clean up all containers
+1. Validate Home Assistant configuration
+1. Start fresh Home Assistant instance
+1. Complete onboarding automatically
+1. Run UI tests with Playwright
+1. Generate timestamped test reports
+1. Clean up all containers
 
 ### Basic Commands
 
@@ -33,6 +34,7 @@ make test:ui:debug
 ### What Happens Behind the Scenes
 
 The `make test:ui` commands:
+
 - Build a custom Docker image with Python 3.11 and Playwright browsers
 - Start Home Assistant with a clean configuration
 - Automatically complete the onboarding process
@@ -45,11 +47,12 @@ The `make test:ui` commands:
 ### Container Services
 
 1. **config-validator**: Validates Home Assistant configuration before starting
-2. **home-assistant-server**: Runs Home Assistant with health checks
-3. **onboarding**: Completes Home Assistant setup automatically
-4. **runner-ui**: Executes UI tests with Playwright browsers installed
+1. **home-assistant-server**: Runs Home Assistant with health checks
+1. **onboarding**: Completes Home Assistant setup automatically
+1. **runner-ui**: Executes UI tests with Playwright browsers installed
 
 ### File Structure
+
 ```
 tests/ui/docker/
 ├── docker-compose.yml    # Orchestrates all services
@@ -65,19 +68,21 @@ tests/ui/docker/
 ## Writing UI Tests
 
 ### Basic Test Structure
+
 ```python
 import pytest
 from playwright.sync_api import Page
+
 
 @pytest.mark.ui
 def test_home_assistant_loads(page: Page, ha_url: str):
     """Test that Home Assistant loads successfully."""
     # Navigate to Home Assistant
     page.goto(ha_url, wait_until="networkidle")
-    
+
     # Check the title
     assert "Home Assistant" in page.title()
-    
+
     # Take a screenshot
     page.screenshot(path="/reports/test_screenshot.png")
 ```
@@ -92,31 +97,36 @@ def test_home_assistant_loads(page: Page, ha_url: str):
 ### Best Practices
 
 1. **Wait for Page Load**
+
    ```python
    page.goto(ha_url, wait_until="networkidle")
    ```
 
-2. **Use Proper Selectors**
+1. **Use Proper Selectors**
+
    ```python
    # Good - Specific selectors
    page.click("mwc-button[raised]")
    page.locator("ha-card[header='Automations']")
-   
+
    # Avoid - Generic selectors
    page.click("button")
    ```
 
-3. **Handle Dynamic Content**
+1. **Handle Dynamic Content**
+
    ```python
    # Wait for elements
    page.wait_for_selector("home-assistant", state="visible")
-   
+
    # Use expect for auto-retry
    from playwright.sync_api import expect
+
    expect(page.locator("ha-card")).to_be_visible()
    ```
 
-4. **Screenshots in Reports Directory**
+1. **Screenshots in Reports Directory**
+
    ```python
    # Screenshots must go to /reports/ which is mounted
    page.screenshot(path="/reports/my_screenshot.png")
@@ -125,6 +135,7 @@ def test_home_assistant_loads(page: Page, ha_url: str):
 ## Test Reports
 
 Test results are saved in the `reports/` directory:
+
 - Report files are named: `ui_YYYYMMDD_HHMMSS_results.xml`
 - Each test run generates a new timestamped report
 - Screenshots are saved alongside reports
@@ -133,11 +144,13 @@ Test results are saved in the `reports/` directory:
 ## Parallel Execution
 
 Tests run in parallel by default (2 workers):
+
 - Each worker gets its own browser instance
 - Tests are isolated with fresh browser contexts
 - No shared state between tests
 
 To control parallelization:
+
 ```bash
 # Default: 2 parallel workers
 make test:ui
@@ -155,6 +168,7 @@ docker-compose -f tests/ui/docker/docker-compose.yml run \
 ## Environment Variables
 
 The following environment variables are available:
+
 - `HA_URL`: Home Assistant URL (default: http://home-assistant-test-server:8123)
 - `HEADED`: Run in headed mode (default: false)
 - `DEBUG`: Run in debug mode with single worker (default: false)
@@ -163,6 +177,7 @@ The following environment variables are available:
 ## Troubleshooting
 
 ### Container Issues
+
 ```bash
 # View logs
 docker-compose -f tests/ui/docker/docker-compose.yml logs
@@ -172,10 +187,11 @@ docker ps -a --filter "name=home-assistant-test-" --format "{{.Names}}" | xargs 
 ```
 
 ### Test Failures
+
 1. Check if Home Assistant started correctly
-2. Verify onboarding completed successfully
-3. Look at screenshots in reports directory
-4. Run in debug mode to see browser interactions
+1. Verify onboarding completed successfully
+1. Look at screenshots in reports directory
+1. Run in debug mode to see browser interactions
 
 ### Common Errors
 
@@ -206,8 +222,8 @@ The containerized approach makes CI/CD integration simple:
 
 1. **Local Development**: You can still run tests locally without Docker if you have Home Assistant running on localhost:8123
 
-2. **Browser Choice**: Tests run on Chromium by default. Firefox and WebKit are also installed.
+1. **Browser Choice**: Tests run on Chromium by default. Firefox and WebKit are also installed.
 
-3. **Debugging**: Use `make test:ui:debug` to see the browser and slow down actions
+1. **Debugging**: Use `make test:ui:debug` to see the browser and slow down actions
 
-4. **Custom Configuration**: Modify `tests/ui/docker/config/configuration.yaml` to test specific HA setups
+1. **Custom Configuration**: Modify `tests/ui/docker/config/configuration.yaml` to test specific HA setups
