@@ -1,0 +1,91 @@
+id: smart_doorbell_notification
+alias: Smart Doorbell Notification
+description: Send notifications with snapshot when doorbell pressed, with DND respect
+mode: single
+max_exceeded: silent
+trigger:
+  - platform: event
+    event_type: doorbell_pressed
+  - platform: state
+    entity_id: binary_sensor.front_door_motion
+    to: 'on'
+  - platform: state
+    entity_id: binary_sensor.doorbell_button
+    to: 'on'
+condition:
+  - condition: template
+    value_template: >
+      {{ not is_state('input_boolean.do_not_disturb', 'on') or 
+         (now().hour < 22 and now().hour >= 8) }}
+action:
+  - parallel:
+      # Take camera snapshot
+      - service: camera.snapshot
+        target:
+          entity_id: camera.front_door
+        data:
+          filename: /tmp/doorbell_{{ now().strftime('%Y%m%d_%H%M%S') }}.jpg
+      
+      # Flash lights if home
+      - choose:
+          - conditions:
+              - condition: state
+                entity_id: person.homeowner
+                state: home
+            sequence:
+              - service: light.turn_on
+                target:
+                  entity_id: 
+                    - light.hallway
+                    - light.entrance
+                data:
+                  flash: short
+      
+      # Send notifications
+      - service: notify.all_devices
+        data:
+          title: "🔔 Doorbell"
+          message: >
+            {% if trigger.platform == 'event' %}
+              Someone rang the doorbell
+            {% else %}
+              Motion detected at front door
+            {% endif %}
+            at {{ now().strftime('%I:%M %p') }}
+          data:
+            priority: high
+            ttl: 0
+            image: /local/doorbell_snapshot.jpg
+            actions:
+              - action: "OPEN_DOOR"
+                title: "Open Door"
+              - action: "SPEAK"
+                title: "Speak"
+              - action: "IGNORE"
+                title: "Ignore"
+      
+      # Announce on speakers if not in DND
+      - choose:
+          - conditions:
+              - condition: state
+                entity_id: input_boolean.do_not_disturb
+                state: 'off'
+              - condition: time
+                after: '08:00:00'
+                before: '22:00:00'
+            sequence:
+              - service: tts.google_say
+                target:
+                  entity_id: media_player.living_room_speaker
+                data:
+                  message: "Someone is at the front door"
+                  cache: true
+      
+      # Log the event
+      - service: logbook.log
+        data:
+          name: Doorbell
+          message: >
+            {{ trigger.platform }} triggered doorbell automation.
+            DND is {{ states('input_boolean.do_not_disturb') }}.
+            Homeowner is {{ states('person.homeowner') }}.

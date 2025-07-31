@@ -1,0 +1,19 @@
+# Test Zones
+
+- name: Home
+  latitude: 40.7128
+  longitude: -74.0060
+  radius: 100
+  icon: mdi:home
+
+- name: Work
+  latitude: 40.7580
+  longitude: -73.9855
+  radius: 200
+  icon: mdi:briefcase
+
+- name: Test Zone
+  latitude: 40.7000
+  longitude: -74.0000
+  radius: 50
+  icon: mdi:test-tube

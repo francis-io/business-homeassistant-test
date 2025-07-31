@@ -1,0 +1,13 @@
+# Test Persons
+
+- name: John
+  id: john
+  device_trackers:
+    - device_tracker.johns_phone
+  user_id: test_user_john
+
+- name: Test User
+  id: test_user
+  device_trackers:
+    - device_tracker.test_phone
+  user_id: test_user_id

@@ -1,0 +1,21 @@
+# UI test requirements
+# This file contains dependencies for browser-based UI testing
+
+# Include base requirements
+-r ../requirements.txt
+
+# Browser automation
+playwright>=1.40.0
+
+# Playwright pytest plugin (includes parallel execution support)
+pytest-playwright>=0.4.3
+
+# Visual testing
+pillow>=10.0.0  # For image comparison/screenshots
+pixelmatch>=0.3.0  # For visual regression testing
+
+# Test reporting
+pytest-html>=4.1.0  # HTML test reports with screenshots
+pytest-metadata>=3.0.0  # Test metadata for reports
+
+# Note: pytest-xdist is already in base requirements for parallel execution

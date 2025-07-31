@@ -1,0 +1,34 @@
+# Base test dependencies for Home Assistant Testing Framework
+# This file contains all common test dependencies
+
+# Core testing
+pytest
+pytest-asyncio
+pytest-cov
+pytest-timeout
+pytest-mock
+pytest-xdist  # For parallel test execution
+pytest-watch
+
+# Time manipulation
+freezegun
+
+# API testing
+aiohttp
+websocket-client
+requests
+
+# Mocking
+aioresponses
+responses
+
+# Utilities
+pyyaml
+python-dotenv
+rich
+
+# Code quality
+black
+flake8
+isort
+mypy

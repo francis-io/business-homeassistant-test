@@ -1,0 +1,11 @@
+# Integration test requirements
+# This file contains additional dependencies needed for integration tests
+
+# Include base requirements
+-r ../requirements.txt
+
+# Home Assistant for fast integration tests
+homeassistant>=2024.1.0
+
+# Note: We're NOT using pytest-homeassistant-custom-component
+# Instead, we'll create our own lightweight fixtures in tests/common.py

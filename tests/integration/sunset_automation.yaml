@@ -1,0 +1,16 @@
+id: turn_on_lights_at_sunset
+alias: Turn on lights at sunset
+description: Automatically turn on living room lights when the sun sets
+trigger:
+  - platform: sun
+    event: sunset
+    offset: 0
+condition: []
+action:
+  - service: light.turn_on
+    target:
+      entity_id: light.living_room
+    data:
+      brightness_pct: 80
+      transition: 5
+mode: single

@@ -1,0 +1,17 @@
+# E2E test requirements
+# This file contains dependencies for end-to-end browser testing
+
+# Include base requirements
+-r ../requirements.txt
+
+# Browser automation
+# Uncomment the tool you want to use:
+
+# Option 1: Playwright (recommended - modern, fast, reliable)
+# playwright>=1.40.0
+
+# Option 2: Selenium (traditional, wide support)
+# selenium>=4.16.0
+
+# Note: E2E tests are not yet implemented in this project.
+# This file is a placeholder for future development.

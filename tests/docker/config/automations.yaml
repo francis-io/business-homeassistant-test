@@ -1,0 +1,98 @@
+# Test Automations
+
+# Time-based light automation
+- id: 'evening_lights'
+  alias: 'Evening Lights'
+  description: 'Turn on living room lights at 18:30 after sunset'
+  trigger:
+    - platform: time
+      at: '18:30:00'
+  condition:
+    - condition: sun
+      after: sunset
+  action:
+    - service: light.turn_on
+      target:
+        entity_id: light.living_room
+      data:
+        brightness: 80
+        transition: 5
+
+# Water leak notification
+- id: 'water_leak_alert'
+  alias: 'Water Leak Alert'
+  description: 'Send notification when water leak detected'
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.water_leak_kitchen
+      to: 'on'
+  action:
+    - service: notify.mobile_app_johns_phone
+      data:
+        title: "Water Leak Detected!"
+        message: "Water leak in kitchen - immediate attention required"
+        data:
+          priority: "high"
+          tag: "water_leak"
+          actions:
+            - action: "SILENCE_ALARM"
+              title: "Silence"
+            - action: "CALL_PLUMBER"
+              title: "Call Plumber"
+
+# Zone entry automation
+- id: 'welcome_home_evening'
+  alias: 'Welcome Home Evening'
+  description: 'Welcome home actions when arriving in evening'
+  trigger:
+    - platform: zone
+      entity_id: person.john
+      zone: zone.home
+      event: enter
+  condition:
+    - condition: time
+      after: '17:00:00'
+      before: '22:00:00'
+  action:
+    - service: light.turn_on
+      target:
+        entity_id: 
+          - light.entrance
+          - light.hallway
+    - service: climate.set_temperature
+      target:
+        entity_id: climate.living_room
+      data:
+        temperature: 22
+    - service: notify.mobile_app_johns_phone
+      data:
+        message: "Welcome home! Setting up evening mode."
+
+# Test versions for dynamic testing
+- id: 'test_evening_lights'
+  alias: 'Test Evening Lights'
+  description: 'Test version of evening lights automation'
+  trigger:
+    - platform: time
+      at: '18:30:00'
+  action:
+    - service: light.turn_on
+      target:
+        entity_id: light.test_light
+      data:
+        brightness: 80
+
+- id: 'test_water_leak'
+  alias: 'Test Water Leak'
+  description: 'Test version of water leak automation'
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.test_water_leak
+      to: 'on'
+  action:
+    - service: notify.mobile_app_test_phone
+      data:
+        title: "Test Alert"
+        message: "Test water leak detected"
+        data:
+          priority: "high"

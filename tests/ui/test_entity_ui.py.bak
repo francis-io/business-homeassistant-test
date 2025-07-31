@@ -1,0 +1,215 @@
+"""UI tests for Home Assistant entity interface using pytest-playwright."""
+
+import pytest
+from playwright.sync_api import Page, expect
+
+
+class TestEntityUI:
+    """Test entity UI functionality."""
+    
+    @pytest.mark.ui
+    def test_view_entities_list(self, page: Page, ha_url: str):
+        """Test viewing the entities list."""
+        # Navigate to entities page
+        page.goto(ha_url)
+        page.click("a[href='/config/entities']")
+        
+        # Wait for entities page to load
+        page.wait_for_selector("ha-config-entities", state="visible", timeout=10000)
+        
+        # Check for data table
+        expect(page.locator("ha-data-table")).to_be_visible()
+        
+        # Check for search functionality
+        expect(page.locator("search-input")).to_be_visible()
+    
+    @pytest.mark.ui
+    def test_filter_entities_by_domain(self, page: Page, ha_url: str):
+        """Test filtering entities by domain."""
+        # Navigate to entities page
+        page.goto(ha_url)
+        page.click("a[href='/config/entities']")
+        page.wait_for_selector("ha-config-entities", state="visible")
+        
+        # Click on filter button
+        filter_button = page.locator("ha-icon-button").filter(has=page.locator("ha-svg-icon[path*='filter']"))
+        if filter_button.count() > 0:
+            filter_button.first.click()
+            
+            # Wait for filter menu
+            filter_menu = page.locator("ha-filter")
+            expect(filter_menu).to_be_visible()
+            
+            # Look for domain filters
+            domain_filters = filter_menu.locator("mwc-checkbox")
+            if domain_filters.count() > 0:
+                # Click first domain filter
+                domain_filters.first.click()
+                
+                # Apply filter
+                apply_button = filter_menu.locator("mwc-button").filter(has_text="Apply")
+                if apply_button.count() > 0:
+                    apply_button.click()
+                    
+                    # Wait for filter to apply
+                    page.wait_for_timeout(500)
+                    
+                    # Verify table is still visible (filtered)
+                    expect(page.locator("ha-data-table")).to_be_visible()
+    
+    @pytest.mark.ui
+    def test_entity_more_info(self, page: Page, ha_url: str):
+        """Test opening entity more info dialog."""
+        # Navigate to entities page
+        page.goto(ha_url)
+        page.click("a[href='/config/entities']")
+        page.wait_for_selector("ha-config-entities", state="visible")
+        
+        # Wait for table rows to load
+        page.wait_for_selector("tr[data-row-id]", state="visible", timeout=10000)
+        
+        # Click on first entity row
+        entity_rows = page.locator("tr[data-row-id]")
+        if entity_rows.count() > 0:
+            entity_rows.first.click()
+            
+            # More info dialog should appear
+            more_info = page.locator("ha-more-info-dialog")
+            expect(more_info).to_be_visible()
+            
+            # Check for entity details
+            entity_header = page.locator("[slot='header'] span")
+            expect(entity_header).to_contain_text(".")
+            
+            # Close dialog
+            close_button = page.locator("mwc-icon-button[aria-label='Close dialog']")
+            if close_button.count() > 0:
+                close_button.click()
+                
+                # Dialog should close
+                expect(more_info).not_to_be_visible()
+    
+    @pytest.mark.ui
+    def test_entity_settings(self, page: Page, ha_url: str):
+        """Test accessing entity settings."""
+        # Navigate to entities page
+        page.goto(ha_url)
+        page.click("a[href='/config/entities']")
+        page.wait_for_selector("ha-config-entities", state="visible")
+        
+        # Wait for table rows
+        page.wait_for_selector("tr[data-row-id]", state="visible")
+        
+        # Find settings icon for first entity
+        entity_rows = page.locator("tr[data-row-id]")
+        if entity_rows.count() > 0:
+            first_row = entity_rows.first
+            settings_icon = first_row.locator("ha-icon-button").filter(has=page.locator("ha-svg-icon[path*='cog']"))
+            
+            if settings_icon.count() > 0:
+                settings_icon.first.click()
+                
+                # Should navigate to entity settings
+                page.wait_for_url("**/config/entities/entity/**")
+                
+                # Verify settings page loaded
+                expect(page.locator("ha-entity-settings-card")).to_be_visible()
+
+
+class TestEntitySearch:
+    """Test entity search functionality."""
+    
+    @pytest.mark.ui
+    def test_search_entities(self, page: Page, ha_url: str):
+        """Test searching for entities."""
+        # Navigate to entities page
+        page.goto(ha_url)
+        page.click("a[href='/config/entities']")
+        page.wait_for_selector("ha-config-entities", state="visible")
+        
+        # Find search input
+        search_input = page.locator("search-input")
+        search_input.wait_for(state="visible")
+        
+        # Type search query
+        search_input.type("light")
+        
+        # Wait for results to filter
+        page.wait_for_timeout(500)
+        
+        # Verify table is still visible (filtered)
+        expect(page.locator("ha-data-table")).to_be_visible()
+        
+        # Clear search
+        clear_button = search_input.locator("mwc-icon-button[slot='suffix']")
+        if clear_button.count() > 0:
+            clear_button.click()
+            
+            # Wait for clear
+            page.wait_for_timeout(500)
+            
+            # Table should still be visible (unfiltered)
+            expect(page.locator("ha-data-table")).to_be_visible()
+    
+    @pytest.mark.ui 
+    def test_entity_state_display(self, page: Page, ha_url: str):
+        """Test that entity states are displayed correctly."""
+        # Navigate to entities page
+        page.goto(ha_url)
+        page.click("a[href='/config/entities']")
+        page.wait_for_selector("ha-config-entities", state="visible")
+        
+        # Wait for entities to load
+        page.wait_for_selector("tr[data-row-id]", state="visible")
+        
+        # Check that state column exists
+        state_headers = page.locator("th").filter(has_text="State")
+        if state_headers.count() > 0:
+            expect(state_headers.first).to_be_visible()
+            
+            # Check that entities have state values
+            state_cells = page.locator("td[data-column-id='state']")
+            count = state_cells.count()
+            
+            if count > 0:
+                # Check first few state cells have content
+                for i in range(min(3, count)):
+                    state_cell = state_cells.nth(i)
+                    state_text = state_cell.text_content()
+                    assert state_text, f"Entity {i} should have a state value"
+
+
+class TestEntityBulkOperations:
+    """Test bulk operations on entities."""
+    
+    @pytest.mark.ui
+    def test_select_multiple_entities(self, page: Page, ha_url: str):
+        """Test selecting multiple entities."""
+        # Navigate to entities page
+        page.goto(ha_url)
+        page.click("a[href='/config/entities']")
+        page.wait_for_selector("ha-config-entities", state="visible")
+        
+        # Wait for checkboxes to be available
+        page.wait_for_selector("mwc-checkbox[data-row-id]", state="visible", timeout=10000)
+        
+        # Select first two entities
+        checkboxes = page.locator("mwc-checkbox[data-row-id]")
+        count = checkboxes.count()
+        
+        if count >= 2:
+            # Click first two checkboxes
+            checkboxes.nth(0).click()
+            checkboxes.nth(1).click()
+            
+            # Bulk action bar should appear
+            bulk_bar = page.locator("div.header").filter(has_text="selected")
+            expect(bulk_bar).to_be_visible()
+            
+            # Deselect all
+            deselect_button = page.locator("mwc-button").filter(has_text="Deselect")
+            if deselect_button.count() > 0:
+                deselect_button.first.click()
+                
+                # Bulk bar should disappear
+                expect(bulk_bar).not_to_be_visible()

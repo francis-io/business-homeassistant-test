@@ -1,0 +1,44 @@
+[project]
+name = "homeassistant-test"
+version = "0.1.0"
+description = "Home Assistant Testing Framework"
+readme = "README.md"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+asyncio_mode = "auto"
+markers = [
+    "unit: Unit tests (no HA instance required)",
+    "integration: Integration tests (requires running HA)",
+    "ui: UI tests (requires browser and HA)",
+    "api: API tests (requires HA)",
+    "slow: Tests that take >10 seconds",
+]
+addopts = [
+    "--strict-markers",
+    "--tb=short",
+    "--disable-warnings",
+]
+timeout = 30
+# Note: For this test suite, -n 2 is optimal (~1.4s)
+# Using -n auto (8 workers on 8-core) is slower (~2.5s) due to overhead
+# The sweet spot is 2-4 workers for ~90 tests
+
+[tool.pytest.env]
+HA_URL = "http://localhost:8123"
+HA_TOKEN = "test_token"
+
+[tool.black]
+line-length = 88
+target-version = ['py311']
+include = '\.pyi?$'
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true

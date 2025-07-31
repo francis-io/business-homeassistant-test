@@ -1,0 +1,88 @@
+id: smart_climate_control
+alias: Smart Climate Control
+description: Automatically adjust climate based on temperature, occupancy, and time
+mode: single
+trigger:
+  - platform: time_pattern
+    minutes: "/15"  # Check every 15 minutes
+  - platform: state
+    entity_id: 
+      - sensor.living_room_temperature
+      - sensor.bedroom_temperature
+  - platform: state
+    entity_id: binary_sensor.occupancy
+    to: 'on'
+    for:
+      minutes: 5
+condition:
+  - condition: state
+    entity_id: input_boolean.climate_automation_enabled
+    state: 'on'
+action:
+  - choose:
+      # Heating mode
+      - conditions:
+          - condition: numeric_state
+            entity_id: sensor.average_indoor_temperature
+            below: 19  # Below 19°C
+          - condition: state
+            entity_id: binary_sensor.occupancy
+            state: 'on'
+        sequence:
+          - service: climate.set_temperature
+            target:
+              entity_id: climate.main_thermostat
+            data:
+              temperature: 21
+              hvac_mode: heat
+          - service: notify.mobile_app
+            data:
+              title: "Climate Control"
+              message: "Heating activated - indoor temp below 19°C"
+      
+      # Cooling mode
+      - conditions:
+          - condition: numeric_state
+            entity_id: sensor.average_indoor_temperature
+            above: 26  # Above 26°C
+          - condition: state
+            entity_id: binary_sensor.occupancy
+            state: 'on'
+        sequence:
+          - service: climate.set_temperature
+            target:
+              entity_id: climate.main_thermostat
+            data:
+              temperature: 24
+              hvac_mode: cool
+          - service: fan.turn_on
+            target:
+              entity_id: fan.ceiling_fan
+            data:
+              percentage: 66  # Medium speed
+      
+      # Away mode
+      - conditions:
+          - condition: state
+            entity_id: binary_sensor.occupancy
+            state: 'off'
+            for:
+              minutes: 30
+        sequence:
+          - service: climate.set_preset_mode
+            target:
+              entity_id: climate.main_thermostat
+            data:
+              preset_mode: away
+          - service: fan.turn_off
+            target:
+              entity_id: fan.ceiling_fan
+    
+    # Default - maintain comfort
+    default:
+      - service: climate.set_temperature
+        target:
+          entity_id: climate.main_thermostat
+        data:
+          temperature: 22
+          hvac_mode: auto

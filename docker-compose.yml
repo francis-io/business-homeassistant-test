@@ -1,0 +1,20 @@
+services:
+  home-assistant:
+    container_name: home-assistant
+    image: homeassistant/home-assistant:stable
+    volumes:
+      # Mount the minimal config directory
+      - ./:/config
+    environment:
+      - TZ=UTC
+    ports:
+      - "8123:8123"
+    restart: unless-stopped
+
+  home-assistant-onboarding:
+    container_name: home-assistant-onboarding
+    image: homeassistant/home-assistant:stable  # might as well reuse this container
+    volumes:
+      - ./onboarding.py:/onboarding.py:ro
+    command: ["python", "/onboarding.py", "--base-url", "http://home-assistant:8123"]
+    restart: "no"  # Start once, then it stops on complete

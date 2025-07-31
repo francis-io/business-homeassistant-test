@@ -1,0 +1,129 @@
+id: smart_energy_saving
+alias: Smart Energy Saving
+description: Optimize energy usage based on occupancy, time, and power consumption
+mode: queued
+max: 2
+trigger:
+  - platform: state
+    entity_id: person.homeowner
+    from: 'home'
+    to: 'not_home'
+    for:
+      minutes: 10
+  - platform: time
+    at: '23:00:00'
+  - platform: numeric_state
+    entity_id: sensor.current_power_usage
+    above: 5000  # 5kW
+    for:
+      minutes: 5
+  - platform: sun
+    event: sunrise
+    offset: '01:00:00'  # 1 hour after sunrise
+condition:
+  - condition: state
+    entity_id: input_boolean.energy_saving_mode
+    state: 'on'
+action:
+  - variables:
+      high_power_usage: "{{ states('sensor.current_power_usage') | float > 5000 }}"
+      nobody_home: "{{ is_state('person.homeowner', 'not_home') }}"
+      night_time: "{{ now().hour >= 23 or now().hour < 6 }}"
+  
+  - choose:
+      # Away mode - aggressive savings
+      - conditions:
+          - condition: template
+            value_template: "{{ nobody_home }}"
+        sequence:
+          - service: light.turn_off
+            target:
+              entity_id: all
+            data:
+              transition: 2
+          - service: switch.turn_off
+            target:
+              entity_id:
+                - switch.tv_power
+                - switch.game_console
+                - switch.computer_power
+          - service: climate.set_preset_mode
+            target:
+              entity_id: all
+            data:
+              preset_mode: eco
+          - service: notify.mobile_app
+            data:
+              title: "🔋 Energy Saving"
+              message: "Away mode activated - all non-essential devices turned off"
+              data:
+                tag: energy_saving
+      
+      # High usage alert and reduction
+      - conditions:
+          - condition: template
+            value_template: "{{ high_power_usage }}"
+        sequence:
+          - service: switch.turn_off
+            target:
+              entity_id:
+                - switch.electric_water_heater
+                - switch.pool_pump
+          - service: climate.set_temperature
+            target:
+              entity_id: climate.main_thermostat
+            data:
+              temperature: >
+                {% if states('climate.main_thermostat') == 'heat' %}
+                  {{ state_attr('climate.main_thermostat', 'temperature') | float - 2 }}
+                {% else %}
+                  {{ state_attr('climate.main_thermostat', 'temperature') | float + 2 }}
+                {% endif %}
+          - service: notify.mobile_app
+            data:
+              title: "⚡ High Power Usage"
+              message: "Power usage exceeded 5kW - reducing consumption"
+              data:
+                priority: high
+                tag: power_alert
+      
+      # Night mode
+      - conditions:
+          - condition: template
+            value_template: "{{ night_time }}"
+        sequence:
+          - service: light.turn_off
+            target:
+              entity_id:
+                - light.outdoor_lights
+                - light.decorative_lights
+                - light.landscape_lights
+          - service: media_player.turn_off
+            target:
+              entity_id: all
+          - service: fan.turn_off
+            target:
+              entity_id:
+                - fan.garage_fan
+                - fan.attic_fan
+    
+    # Default - mild savings
+    default:
+      - service: light.turn_off
+        target:
+          entity_id: group.unused_rooms
+      - service: switch.turn_off
+        target:
+          entity_id: group.standby_devices
+  
+  # Always log energy saved
+  - service: input_number.increment
+    target:
+      entity_id: input_number.energy_saving_counter
+  - service: logbook.log
+    data:
+      name: Energy Saving
+      message: >
+        Energy saving action triggered by {{ trigger.platform }}.
+        Current usage: {{ states('sensor.current_power_usage') }}W.
+        Mode: {% if nobody_home %}away{% elif night_time %}night{% elif high_power_usage %}high usage{% else %}standard{% endif %}

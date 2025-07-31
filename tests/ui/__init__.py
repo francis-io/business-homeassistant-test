@@ -1,0 +1,1 @@
+"""UI tests for Home Assistant using Playwright."""
