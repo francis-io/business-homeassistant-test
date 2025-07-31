@@ -1,4 +1,4 @@
-name: E2E Tests
+name: All Tests
 
 on:
   pull_request:
@@ -8,9 +8,9 @@ on:
   workflow_dispatch:
 
 jobs:
-  e2e-tests:
+  all-tests:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     permissions:
       contents: read
       pull-requests: write
@@ -18,6 +18,22 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install UV
+      run: |
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+    - name: Setup Python environment
+      run: |
+        uv venv --python 3.11
+        source .venv/bin/activate
+        uv pip install -r tests/requirements.txt
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
@@ -31,14 +47,16 @@ jobs:
         # Verify installation
         docker-compose --version
 
-    - name: Run E2E tests
-      run: make test:e2e
+    - name: Run all tests
+      run: |
+        source .venv/bin/activate
+        make test
 
     - name: Upload test results
       uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: e2e-test-results
+        name: test-results
         path: reports/
         retention-days: 30
 
@@ -46,10 +64,12 @@ jobs:
       uses: actions/upload-artifact@v4
       if: failure()
       with:
-        name: e2e-test-logs
+        name: test-logs
         path: |
           tests/e2e/docker/*.log
           tests/e2e/docker/**/*.log
+          tests/ui/docker/*.log
+          tests/ui/docker/**/*.log
         retention-days: 7
 
     - name: Comment PR with results
@@ -77,9 +97,15 @@ jobs:
               // Ignore if file doesn't exist
             }
             
-            const comment = `## E2E Test Results
+            const comment = `## Test Results
             
-            ${testPassed ? '✅ **All E2E tests passed!**' : '❌ **E2E tests failed**'}${reportInfo}
+            ${testPassed ? '✅ **All tests passed!**' : '❌ **Tests failed**'}${reportInfo}
+            
+            Test suite includes:
+            - Unit tests (logic + mock)  
+            - Integration tests
+            - E2E tests (Docker)
+            - UI tests (Playwright in Docker)
             
             [View full workflow run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`;
             

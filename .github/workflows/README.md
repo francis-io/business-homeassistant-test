@@ -1,40 +1,57 @@
 # GitHub Actions Workflows
 
-## E2E Tests Workflow
+This directory contains GitHub Actions workflows for automated testing.
 
-The `e2e-tests.yml` workflow automatically runs end-to-end tests for pull requests and pushes to the main branch.
+## Workflows
 
-### Features
+### 1. All Tests (`all-tests.yml`)
+- **Trigger**: On every PR and push to main/master branches
+- **Purpose**: Runs the complete test suite
+- **What it runs**: `make test` which includes:
+  - Unit tests (logic + mock)
+  - Integration tests
+  - E2E tests (Docker)
+  - UI tests (Playwright in Docker)
+- **Timeout**: 20 minutes
+- **Artifacts**: Test results and logs
 
-- **Automatic Execution**: Runs on every PR and push to main/master
-- **Test Results Upload**: Saves test reports as artifacts for 30 days
-- **Error Logs**: Captures logs on failure for debugging
-- **PR Comments**: Automatically comments on PRs with test results
-- **Manual Trigger**: Can be run manually via workflow_dispatch
+### 2. E2E Tests Only (`e2e-tests.yml`)
+- **Trigger**: Manual only (workflow_dispatch)
+- **Purpose**: Run just the E2E tests for debugging
+- **What it runs**: `make test:e2e`
+- **Timeout**: 10 minutes
+- **Artifacts**: E2E test results and logs
 
-### Required Branch Protection
+## Key Features
 
-To ensure E2E tests pass before merging, configure branch protection rules:
+### Test Environment Setup
+- Python 3.11 with UV package manager
+- Docker Compose v2.39.1 for containerized tests
+- Automatic dependency installation
 
-1. Go to Settings → Branches
-2. Add/Edit rule for your main branch
-3. Enable "Require status checks to pass before merging"
-4. Select "e2e-tests" from the status checks list
-5. Enable "Require branches to be up to date before merging"
+### PR Comments
+- Workflows automatically comment on PRs with test results
+- Includes links to test reports and full workflow runs
+- Works even if some tests fail
 
-### Workflow Details
+### Artifacts
+- Test results are saved for 30 days
+- Test logs are saved for 7 days (on failure)
+- Reports include JUnit XML format for integration
 
-- **Timeout**: 10 minutes (tests typically complete in ~40 seconds)
-- **Runner**: Ubuntu latest
-- **Artifacts**: Test results are saved even if tests fail
-- **PR Integration**: Comments with pass/fail status and report filename
+## Running Workflows Manually
 
-### Local Testing
+You can manually trigger workflows from the Actions tab:
+1. Go to the Actions tab in GitHub
+2. Select the workflow you want to run
+3. Click "Run workflow"
+4. Select the branch and click "Run workflow"
 
-Before pushing, you can run the same tests locally:
+## Adding New Workflows
 
-```bash
-make test:e2e
-```
-
-Test reports will be saved in the `reports/` directory.
+When adding new workflows:
+1. Use the existing workflows as templates
+2. Include proper permissions for PR comments
+3. Add artifact upload for test results
+4. Set appropriate timeouts
+5. Use UV for fast Python dependency management

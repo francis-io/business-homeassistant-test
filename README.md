@@ -105,24 +105,18 @@ This framework includes tests for three common Home Assistant automation pattern
 ### Using Make (Recommended)
 
 ```bash
-# Run all tests
+# Run all tests (unit, integration, e2e, ui)
 make test
 
-# Run specific test types (all run in parallel by default)
-make test:unit          # Unit tests only (parallel)
+# Run specific test types
+make test:unit          # Unit tests only (logic + mock)
 make test:unit:logic    # Logic tests only
 make test:unit:mock     # Mock tests only
 make test:integration   # Integration tests (in-memory HA)
-make test-ui           # UI tests (if implemented)
-make test-api          # API tests (if implemented)
-
-# Sequential execution for debugging
-make test-unit-sequential  # Run unit tests one at a time
-
-# Run specific test scenarios
-make test-lights        # Time-based light tests
-make test-notifications # Notification tests
-make test-zones        # Zone entry tests
+make test:e2e           # End-to-end tests (Docker)
+make test:ui            # UI tests with Playwright (Docker)
+make test:ui:headed     # UI tests with visible browser
+make test:ui:debug      # UI tests in debug mode
 
 # Watch mode for development
 make test-watch
