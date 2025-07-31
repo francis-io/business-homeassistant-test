@@ -1,19 +1,40 @@
 services:
+  # Configuration validator - runs before Home Assistant starts
+  config-validator:
+    container_name: config-validator
+    image: homeassistant/home-assistant:stable
+    volumes:
+      # Mount configuration as read-only for validation
+      - ./configuration.yaml:/config/configuration.yaml:ro
+    command: ["python", "-m", "homeassistant", "--config", "/config", "--script", "check_config"]
+    restart: "no"  # Run once and exit
+
   home-assistant:
     container_name: home-assistant
     image: homeassistant/home-assistant:stable
+    depends_on:
+      config-validator:
+        condition: service_completed_successfully
     volumes:
-      # Mount the minimal config directory
-      - ./:/config
+      - ./configuration.yaml:/config/configuration.yaml:ro
     environment:
       - TZ=UTC
     ports:
       - "8123:8123"
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8123/"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
 
   home-assistant-onboarding:
     container_name: home-assistant-onboarding
     image: homeassistant/home-assistant:stable  # might as well reuse this container
+    depends_on:
+      home-assistant:
+        condition: service_healthy
     volumes:
       - ./onboarding.py:/onboarding.py:ro
     command: ["python", "/onboarding.py", "--base-url", "http://home-assistant:8123"]
