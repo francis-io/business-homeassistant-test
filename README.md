@@ -24,6 +24,7 @@ Test automation behavior using mocked Home Assistant components:
 
 - 🧪 **Multi-level Testing**: Unit, Integration, UI, and API tests
 - 🐳 **Docker-based**: Isolated Home Assistant instance with health monitoring
+- ✅ **Configuration Validation**: Automatic validation before Home Assistant starts
 - ⚡ **Fast Feedback**: Unit tests run in seconds, integration tests in minutes
 - 🚀 **Parallel Execution**: Tests run across all CPU cores with pytest-xdist
 - 📊 **Coverage Reports**: HTML coverage reports with detailed metrics
@@ -129,16 +130,26 @@ make test-watch
 
 ### Using Docker Compose
 
+The Docker Compose setup includes automatic configuration validation:
+
 ```bash
-# Start Home Assistant
-docker-compose -f docker/docker-compose.yml up -d homeassistant
+# Start Home Assistant (validates configuration first)
+docker-compose up -d
 
-# Run tests
-docker-compose -f docker/docker-compose.yml run test_runner
+# If configuration is invalid, you'll see validation errors:
+docker logs config-validator
 
-# View logs
-docker-compose -f docker/docker-compose.yml logs -f
+# View Home Assistant logs
+docker-compose logs -f home-assistant
 ```
+
+**Configuration Validation Flow:**
+1. `config-validator` service runs first to check `configuration.yaml`
+2. If validation passes, Home Assistant starts
+3. If validation fails, Home Assistant won't start and clear error messages are shown
+4. Once Home Assistant is healthy, the onboarding service runs
+
+This prevents Home Assistant from starting with invalid configurations, protecting against database corruption and startup failures.
 
 ### Using UV Python Environment
 
@@ -355,7 +366,10 @@ The framework generates JUnit XML reports suitable for CI systems:
 
 ### Common Issues
 
-1. **Home Assistant not starting**: Check Docker logs with `make logs`
+1. **Home Assistant not starting**: 
+   - Check configuration validation: `docker logs config-validator`
+   - Check Home Assistant logs: `make logs` or `docker-compose logs home-assistant`
+   - Common cause: Invalid configuration.yaml syntax or settings
 2. **Tests timing out**: Increase timeout in `pyproject.toml` under `[tool.pytest.ini_options]`
 3. **Permission errors**: Ensure Docker has necessary permissions
 4. **Token issues**: Regenerate token and update `.env`
