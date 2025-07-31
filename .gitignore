@@ -203,15 +203,12 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-# Home Assistant container-generated files
-tests/docker/config/.storage/
-tests/docker/config/deps/
-tests/docker/config/tts/
-tests/docker/config/*.log
-tests/docker/config/*.log.*
-tests/docker/config/*.txt
-tests/docker/config/.HA_VERSION
-tests/docker/config/home-assistant_v2.db*
-
-# Terraform
-terraform/
+# # Home Assistant container-generated files
+# tests/docker/config/.storage/
+# tests/docker/config/deps/
+# tests/docker/config/tts/
+# tests/docker/config/*.log
+# tests/docker/config/*.log.*
+# tests/docker/config/*.txt
+# tests/docker/config/.HA_VERSION
+# tests/docker/config/home-assistant_v2.db*
