@@ -237,6 +237,42 @@ venv-update: env-update
 venv-clean: env-clean
 venv-where: env-where
 
+# Dependency management
+check-deps:
+	@echo "Checking for outdated dependencies..."
+	@.venv/bin/pip list --outdated
+
+update-deps:
+	@echo "Updating all dependencies to latest versions..."
+	@uv pip compile --upgrade pyproject.toml -o requirements-new.txt
+	@echo ""
+	@echo "Dependency changes:"
+	@diff -u tests/requirements.txt requirements-new.txt || true
+	@echo ""
+	@read -p "Apply these updates? [y/N] " -n 1 -r; \
+	echo ""; \
+	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
+		mv requirements-new.txt tests/requirements.txt; \
+		uv pip sync tests/requirements.txt; \
+		echo "Dependencies updated! Run 'make test' to verify."; \
+	else \
+		rm requirements-new.txt; \
+		echo "Update cancelled."; \
+	fi
+
+update-deps-auto:
+	@echo "Updating all dependencies (non-interactive)..."
+	@uv pip compile --upgrade pyproject.toml -o tests/requirements.txt
+	@uv pip sync tests/requirements.txt
+	@echo "Dependencies updated!"
+
+update-and-test: update-deps-auto test
+	@echo "Update and test completed!"
+
+audit-deps:
+	@echo "Running security audit on dependencies..."
+	@.venv/bin/pip-audit || (echo "Found vulnerabilities! Run 'make update-deps' to update." && exit 1)
+
 # Code quality
 lint:
 	@echo "Running linters..."
