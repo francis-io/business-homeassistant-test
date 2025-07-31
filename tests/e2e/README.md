@@ -5,22 +5,25 @@ This directory contains end-to-end (E2E) tests that validate the complete Home A
 ## Overview
 
 E2E tests automatically:
+
 1. Clean up any existing test containers for a fresh start
-2. Validate the configuration
-3. Start Home Assistant
-4. Complete the onboarding process
-5. Run tests against the fully configured instance
-6. Generate timestamped test reports
-7. Clean up all containers afterwards
+1. Validate the configuration
+1. Start Home Assistant
+1. Complete the onboarding process
+1. Run tests against the fully configured instance
+1. Generate timestamped test reports
+1. Clean up all containers afterwards
 
 ## Running E2E Tests
 
 ### Using Make (recommended):
+
 ```bash
 make test:e2e
 ```
 
 ### Running directly with docker-compose:
+
 ```bash
 # Clean up any existing containers
 docker-compose -f tests/e2e/docker/docker-compose.yml down
@@ -37,12 +40,13 @@ docker-compose -f tests/e2e/docker/docker-compose.yml down
 The E2E tests run inside a Docker container to ensure consistency:
 
 1. **Home Assistant starts**: The docker-compose setup validates config and starts HA
-2. **Test container runs**: A Python container with pytest runs in the same network
-3. **Tests execute**: Tests can access Home Assistant at `http://home-assistant:8123`
-4. **Results saved**: JUnit XML results are saved to `reports/` with timestamps
-5. **Cleanup**: All containers are stopped and removed
+1. **Test container runs**: A Python container with pytest runs in the same network
+1. **Tests execute**: Tests can access Home Assistant at `http://home-assistant:8123`
+1. **Results saved**: JUnit XML results are saved to `reports/` with timestamps
+1. **Cleanup**: All containers are stopped and removed
 
 ### Key Features:
+
 - Tests run in isolated Docker container
 - No local Python environment needed for E2E tests
 - Consistent test environment across different machines
@@ -75,6 +79,7 @@ def test_my_e2e_test(ha_url, ha_credentials):
 ## Configuration
 
 The E2E tests use the docker-compose.yml in the docker subdirectory, which includes:
+
 - Configuration validation before startup
 - Automatic onboarding with default credentials (admin/admin) and readiness verification
 - Health checks to ensure HA is ready
@@ -83,6 +88,7 @@ The E2E tests use the docker-compose.yml in the docker subdirectory, which inclu
 ## Test Reports
 
 E2E test results are saved in the `reports/` directory at the project root:
+
 - Report files are named: `e2e_YYYYMMDD_HHMMSS_results.xml`
 - Each test run generates a new timestamped report
 - The exact report filename is displayed after test completion
@@ -91,10 +97,11 @@ E2E test results are saved in the `reports/` directory at the project root:
 ## Troubleshooting
 
 If tests fail to start:
+
 1. Check Docker logs: `docker-compose logs`
-2. Ensure no other services are using port 8123
-3. Verify docker-compose.yml syntax
-4. Check that all required files exist in their directories:
+1. Ensure no other services are using port 8123
+1. Verify docker-compose.yml syntax
+1. Check that all required files exist in their directories:
    - `docker/config/configuration.yaml`
    - `docker/scripts/onboarding.py`
    - `docker/scripts/test_onboarding_complete.py`

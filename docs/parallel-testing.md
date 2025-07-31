@@ -37,6 +37,7 @@ scheduling tests via LoadScopeScheduling
 ```
 
 Each worker:
+
 - Runs in a **separate Python process**
 - Has its own **isolated memory space**
 - Gets assigned tests dynamically
@@ -50,7 +51,7 @@ Each test runs in complete isolation:
 # This counter is NOT shared between workers
 class TestIsolation:
     shared_counter = 0
-    
+
     def test_isolation_1(self):
         TestIsolation.shared_counter += 1
         # Always 1 in isolated workers
@@ -71,11 +72,11 @@ class TestIsolation:
 
 ### Real-World Results
 
-| Test Suite | Sequential | Parallel (8 cores) | Speedup |
-|------------|------------|-------------------|---------|
-| Unit Tests (63 tests) | ~12s | ~2.4s | 5x |
-| Integration Tests | ~30s | ~5s | 6x |
-| Full Suite | ~45s | ~7s | 6.4x |
+| Test Suite            | Sequential | Parallel (8 cores) | Speedup |
+| --------------------- | ---------- | ------------------ | ------- |
+| Unit Tests (63 tests) | ~12s       | ~2.4s              | 5x      |
+| Integration Tests     | ~30s       | ~5s                | 6x      |
+| Full Suite            | ~45s       | ~7s                | 6.4x    |
 
 ## Configuration Options
 
@@ -131,8 +132,8 @@ Each test can access worker info:
 
 ```python
 def test_worker_info(self):
-    worker_id = os.environ.get('PYTEST_XDIST_WORKER', 'master')
-    worker_count = os.environ.get('PYTEST_XDIST_WORKER_COUNT', '1')
+    worker_id = os.environ.get("PYTEST_XDIST_WORKER", "master")
+    worker_count = os.environ.get("PYTEST_XDIST_WORKER_COUNT", "1")
     print(f"Running on worker {worker_id} of {worker_count}")
 ```
 
@@ -153,68 +154,78 @@ pytest -n auto -s | grep "gw0"
 ### 1. Write Independent Tests
 
 ✅ **Good**: Each test sets up its own state
+
 ```python
 def test_light_on(self):
     # Setup
-    hass.set_state('light.test', 'off')
-    
+    hass.set_state("light.test", "off")
+
     # Test
-    hass.trigger_automation('lights_on')
-    
+    hass.trigger_automation("lights_on")
+
     # Assert
-    assert hass.get_state('light.test') == 'on'
+    assert hass.get_state("light.test") == "on"
 ```
 
 ❌ **Bad**: Tests depend on previous test state
+
 ```python
 def test_1_setup(self):
-    hass.set_state('light.test', 'off')
+    hass.set_state("light.test", "off")
+
 
 def test_2_depends_on_1(self):
     # BAD: Assumes test_1 ran first
-    assert hass.get_state('light.test') == 'off'
+    assert hass.get_state("light.test") == "off"
 ```
 
 ### 2. Use Unique Entity Names
 
 ✅ **Good**: Unique names prevent conflicts
+
 ```python
 def test_motion_sensor_1(self):
-    hass.set_state('binary_sensor.motion_test_1', 'on')
+    hass.set_state("binary_sensor.motion_test_1", "on")
+
 
 def test_motion_sensor_2(self):
-    hass.set_state('binary_sensor.motion_test_2', 'on')
+    hass.set_state("binary_sensor.motion_test_2", "on")
 ```
 
 ❌ **Bad**: Same entity names cause conflicts
+
 ```python
 def test_motion_1(self):
-    hass.set_state('binary_sensor.motion', 'on')
+    hass.set_state("binary_sensor.motion", "on")
+
 
 def test_motion_2(self):
     # BAD: Conflicts with test_motion_1
-    hass.set_state('binary_sensor.motion', 'off')
+    hass.set_state("binary_sensor.motion", "off")
 ```
 
 ### 3. Avoid Shared Resources
 
 ✅ **Good**: Each test uses its own files
+
 ```python
 def test_config_1(self):
     with tempfile.NamedTemporaryFile() as f:
-        f.write(b'config data')
+        f.write(b"config data")
         # Use temp file
 ```
 
 ❌ **Bad**: Tests share files
+
 ```python
 def test_writes_file(self):
-    with open('/tmp/shared.txt', 'w') as f:
-        f.write('data')
+    with open("/tmp/shared.txt", "w") as f:
+        f.write("data")
+
 
 def test_reads_file(self):
     # BAD: Depends on other test
-    with open('/tmp/shared.txt', 'r') as f:
+    with open("/tmp/shared.txt", "r") as f:
         data = f.read()
 ```
 
@@ -232,25 +243,25 @@ jobs:
     strategy:
       matrix:
         python-version: [3.9, 3.10, 3.11]
-    
+
     steps:
     - uses: actions/checkout@v3
-    
+
     - name: Setup Python
       uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
-    
+
     - name: Install dependencies
       run: |
         pip install uv
         make setup
-    
+
     - name: Run tests in parallel
       run: |
         # Use all available cores in CI
         make test
-    
+
     - name: Upload coverage
       uses: codecov/codecov-action@v3
       if: matrix.python-version == '3.10'
@@ -277,16 +288,18 @@ test:
 
 **Cause**: Tests have hidden dependencies or shared state
 
-**Solution**: 
+**Solution**:
+
 1. Run with `--dist each` to isolate completely
-2. Add unique IDs to entity names
-3. Use fixtures for proper setup/teardown
+1. Add unique IDs to entity names
+1. Use fixtures for proper setup/teardown
 
 ### Issue: Coverage reports are incomplete
 
 **Cause**: Coverage data from workers isn't combined
 
 **Solution**: pytest-cov handles this automatically when using:
+
 ```bash
 pytest -n auto --cov=tests --cov-report=html
 ```
@@ -296,15 +309,17 @@ pytest -n auto --cov=tests --cov-report=html
 **Cause**: Tests waiting for shared resources
 
 **Solution**:
+
 1. Add timeouts: `@pytest.mark.timeout(10)`
-2. Check for file locks or database locks
-3. Use `--timeout=30` globally
+1. Check for file locks or database locks
+1. Use `--timeout=30` globally
 
 ### Issue: Different results on different machines
 
 **Cause**: Tests depend on CPU core count
 
 **Solution**: Use fixed worker count for consistency:
+
 ```bash
 pytest -n 4  # Always use 4 workers
 ```
@@ -343,6 +358,7 @@ Coordinate between workers:
 ```python
 from filelock import FileLock
 
+
 def test_needs_exclusive_resource():
     with FileLock("/tmp/resource.lock"):
         # Exclusive access to resource
@@ -354,7 +370,7 @@ def test_needs_exclusive_resource():
 Parallel testing with pytest-xdist provides:
 
 - **Automatic parallelization** across CPU cores
-- **Complete test isolation** in separate processes  
+- **Complete test isolation** in separate processes
 - **5-8x faster** test execution
 - **Easy debugging** with sequential fallback
 - **CI/CD ready** configuration

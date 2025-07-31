@@ -40,6 +40,21 @@ help:
 	@echo "  make format         - Format code"
 	@echo "  make validate-config - Validate Home Assistant YAML configuration"
 	@echo ""
+	@echo "Pre-commit Hooks:"
+	@echo "  make pre-commit         - Run ALL pre-commit checks manually (verbose)"
+	@echo "  make pre-commit-install - Setup pre-commit hooks (first time)"
+	@echo "  make pre-commit-run     - Run pre-commit on all files"
+	@echo "  make pre-commit-update  - Update hooks to latest versions"
+	@echo "  make pre-commit-status  - Show pre-commit configuration status"
+	@echo ""
+	@echo "Pre-commit Hook Groups (run specific checks):"
+	@echo "  make pre-commit-security - Run security checks only"
+	@echo "  make pre-commit-format   - Run formatting checks only"
+	@echo "  make pre-commit-lint     - Run linting checks only"
+	@echo "  make pre-commit-yaml     - Run YAML validation only"
+	@echo "  make pre-commit-custom   - Run custom validators only"
+	@echo "  make pre-commit-fix      - Run with auto-fix enabled"
+	@echo ""
 	@echo "Python Environment Management (UV):"
 	@echo "  make env-update     - Update all dependencies"
 	@echo "  make env-clean      - Remove Python environment"
@@ -342,6 +357,87 @@ format:
 	@echo "Formatting code..."
 	.venv/bin/black tests/
 	.venv/bin/isort tests/ --skip tests/unit/test_time_based_light.py --skip tests/unit/test_notification.py --skip tests/unit/test_zone_entry.py
+
+# Pre-commit hooks
+pre-commit-install:
+	@echo "Setting up pre-commit hooks..."
+	./scripts/setup-pre-commit.sh
+
+pre-commit-run:
+	@echo "Running pre-commit on all files..."
+	.venv/bin/pre-commit run --all-files
+
+pre-commit-update:
+	@echo "Updating pre-commit hooks to latest versions..."
+	.venv/bin/pre-commit autoupdate
+
+# Run all pre-commit checks manually (comprehensive)
+pre-commit: pre-commit-all
+
+pre-commit-all:
+	@echo "=========================================="
+	@echo "Running ALL pre-commit checks manually"
+	@echo "=========================================="
+	@echo ""
+	@echo "This runs all configured pre-commit hooks:"
+	@echo "- Security checks (detect-secrets, gitleaks, bandit)"
+	@echo "- Test integrity (pytest collection)"
+	@echo "- Type checking (mypy)"
+	@echo "- Code formatting (black, isort)"
+	@echo "- Linting (flake8, vulture, pydocstyle)"
+	@echo "- YAML validation (yamllint)"
+	@echo "- Custom validators (test structure, automation logic, HA mocks)"
+	@echo "- File checks (trailing whitespace, large files, etc.)"
+	@echo ""
+	@if [ ! -f .venv/bin/pre-commit ]; then \
+		echo "Pre-commit not installed. Running setup first..."; \
+		$(MAKE) pre-commit-install; \
+	fi
+	@echo "Running pre-commit on all files..."
+	@.venv/bin/pre-commit run --all-files --verbose
+
+# Run specific pre-commit hook groups
+pre-commit-security:
+	@echo "Running security checks only..."
+	.venv/bin/pre-commit run detect-secrets gitleaks bandit --all-files
+
+pre-commit-format:
+	@echo "Running formatting checks only..."
+	.venv/bin/pre-commit run black isort --all-files
+
+pre-commit-lint:
+	@echo "Running linting checks only..."
+	.venv/bin/pre-commit run flake8 mypy vulture pydocstyle --all-files
+
+pre-commit-yaml:
+	@echo "Running YAML validation only..."
+	.venv/bin/pre-commit run yamllint check-yaml --all-files
+
+pre-commit-custom:
+	@echo "Running custom validators only..."
+	.venv/bin/pre-commit run test-structure-validator automation-logic-enforcer ha-mock-validator --all-files
+
+pre-commit-fix:
+	@echo "Running pre-commit with auto-fix enabled..."
+	.venv/bin/pre-commit run --all-files --hook-stage manual
+
+# Show pre-commit hook status
+pre-commit-status:
+	@echo "Pre-commit configuration status:"
+	@if [ -f .pre-commit-config.yaml ]; then \
+		echo "✓ Configuration file exists"; \
+		echo ""; \
+		echo "Configured hooks:"; \
+		grep -E "^\s+- id:|^\s+name:" .pre-commit-config.yaml | sed 's/.*: /  - /' | sort -u; \
+	else \
+		echo "✗ No .pre-commit-config.yaml found"; \
+	fi
+	@echo ""
+	@if [ -d .git/hooks ] && [ -f .git/hooks/pre-commit ]; then \
+		echo "✓ Pre-commit hook installed"; \
+	else \
+		echo "✗ Pre-commit hook not installed (run 'make pre-commit-install')"; \
+	fi
 
 # Validate Home Assistant configuration
 validate-config:

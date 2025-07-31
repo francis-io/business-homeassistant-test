@@ -1,3 +1,4 @@
+---
 id: smart_energy_saving
 alias: Smart Energy Saving
 description: Optimize energy usage based on occupancy, time, and power consumption
@@ -29,7 +30,7 @@ action:
       high_power_usage: "{{ states('sensor.current_power_usage') | float > 5000 }}"
       nobody_home: "{{ is_state('person.homeowner', 'not_home') }}"
       night_time: "{{ now().hour >= 23 or now().hour < 6 }}"
-  
+
   - choose:
       # Away mode - aggressive savings
       - conditions:
@@ -58,7 +59,7 @@ action:
               message: "Away mode activated - all non-essential devices turned off"
               data:
                 tag: energy_saving
-      
+
       # High usage alert and reduction
       - conditions:
           - condition: template
@@ -86,7 +87,7 @@ action:
               data:
                 priority: high
                 tag: power_alert
-      
+
       # Night mode
       - conditions:
           - condition: template
@@ -106,7 +107,7 @@ action:
               entity_id:
                 - fan.garage_fan
                 - fan.attic_fan
-    
+
     # Default - mild savings
     default:
       - service: light.turn_off
@@ -115,7 +116,7 @@ action:
       - service: switch.turn_off
         target:
           entity_id: group.standby_devices
-  
+
   # Always log energy saved
   - service: input_number.increment
     target:
@@ -126,4 +127,8 @@ action:
       message: >
         Energy saving action triggered by {{ trigger.platform }}.
         Current usage: {{ states('sensor.current_power_usage') }}W.
-        Mode: {% if nobody_home %}away{% elif night_time %}night{% elif high_power_usage %}high usage{% else %}standard{% endif %}
+        Mode: >-
+          {% if nobody_home %}away
+          {% elif night_time %}night
+          {% elif high_power_usage %}high usage
+          {% else %}standard{% endif %}

@@ -5,7 +5,9 @@ A comprehensive testing framework for Home Assistant configurations, integration
 ## Two Testing Approaches
 
 ### 1. Logic-First Testing (Recommended)
+
 Test automation **logic** as pure Python functions without Home Assistant:
+
 - ✅ Fast execution (milliseconds)
 - ✅ No HA instance needed
 - ✅ Test-driven development
@@ -14,7 +16,9 @@ Test automation **logic** as pure Python functions without Home Assistant:
 See [Testing Strategy Documentation](docs/testing-strategy.md) for details.
 
 ### 2. Mock-Based Testing
+
 Test automation behavior using mocked Home Assistant components:
+
 - ✅ Tests service calls and state changes
 - ✅ Simulates HA behavior
 - ❌ Doesn't test actual automations
@@ -44,39 +48,45 @@ Test automation behavior using mocked Home Assistant components:
 
 1. Clone the repository and navigate to the project directory
 
-2. Install dependencies based on your testing needs:
+1. Install dependencies based on your testing needs:
+
    ```bash
    # For unit tests only
    make setup
-   
+
    # For unit + integration tests (includes Home Assistant)
    make setup-integration
-   
+
    # For all test types (future E2E support)
    make setup-all
    ```
-   
+
    This will:
+
    - Create Python 3.11 environment using UV
    - Install test dependencies from tests/requirements/
    - Set up bypass authentication for Docker
 
-3. Build Docker containers:
+1. Build Docker containers:
+
    ```bash
    make build
    ```
 
-4. Start Home Assistant:
+1. Start Home Assistant:
+
    ```bash
    make start
    ```
-   
+
    The system will automatically wait for Home Assistant to be healthy before proceeding. You can check the health status anytime with:
+
    ```bash
    make healthcheck
    ```
 
-5. Run all tests:
+1. Run all tests:
+
    ```bash
    make test
    ```
@@ -86,16 +96,19 @@ Test automation behavior using mocked Home Assistant components:
 This framework includes tests for three common Home Assistant automation patterns:
 
 ### 1. Time-Based Light Automation
+
 - Turns on lights at specific times
 - Includes sunset/sunrise conditions
 - Tests brightness and transition settings
 
 ### 2. Notification System
+
 - Sends mobile app notifications on events
 - Tests priority levels and action buttons
 - Validates notification content and delivery
 
 ### 3. Zone Entry Automation
+
 - Triggers actions when person enters home zone
 - Time-based conditions (evening only)
 - Multiple actions: lights, climate, notifications
@@ -138,10 +151,11 @@ docker-compose logs -f home-assistant
 ```
 
 **Configuration Validation Flow:**
+
 1. `config-validator` service runs first to check `configuration.yaml`
-2. If validation passes, Home Assistant starts
-3. If validation fails, Home Assistant won't start and clear error messages are shown
-4. Once Home Assistant is healthy, the onboarding service runs
+1. If validation passes, Home Assistant starts
+1. If validation fails, Home Assistant won't start and clear error messages are shown
+1. Once Home Assistant is healthy, the onboarding service runs
 
 This prevents Home Assistant from starting with invalid configurations, protecting against database corruption and startup failures.
 
@@ -216,6 +230,7 @@ make restart
 ```
 
 With bypass auth:
+
 - No token required for API calls
 - Trusted networks: localhost and Docker networks
 - Perfect for automated testing
@@ -260,15 +275,19 @@ async def test_light_automation(hass):
     """Test light turns on at specific time."""
     # Setup
     hass.states.async_set("light.test", "off")
-    
+
     # Configure automation
-    await async_setup_component(hass, "automation", {
-        "automation": {
-            "trigger": {"platform": "time", "at": "18:00"},
-            "action": {"service": "light.turn_on", "entity_id": "light.test"}
-        }
-    })
-    
+    await async_setup_component(
+        hass,
+        "automation",
+        {
+            "automation": {
+                "trigger": {"platform": "time", "at": "18:00"},
+                "action": {"service": "light.turn_on", "entity_id": "light.test"},
+            }
+        },
+    )
+
     # Trigger and verify
     await hass.services.async_call("automation", "trigger", blocking=True)
     assert hass.states.get("light.test").state == "on"
@@ -282,11 +301,12 @@ async def test_real_automation(ha_client):
     """Test automation in real HA instance."""
     # Set initial state
     await ha_client.set_state("light.test", "off")
-    
+
     # Trigger automation
-    await ha_client.call_service("automation", "trigger", 
-                                {"entity_id": "automation.test"})
-    
+    await ha_client.call_service(
+        "automation", "trigger", {"entity_id": "automation.test"}
+    )
+
     # Wait and verify
     state = await ha_client.wait_for_state("light.test", "on")
     assert state is True
@@ -311,6 +331,7 @@ deactivate  # Leave Python environment
 ```
 
 Benefits of UV:
+
 - Lightning-fast package installation (10-100x faster than pip)
 - Built-in Python version management (no need for pyenv)
 - Simple Python environment creation
@@ -355,7 +376,7 @@ The framework generates JUnit XML reports suitable for CI systems:
   run: |
     docker-compose up -d homeassistant
     docker-compose run test_runner
-    
+
 - name: Upload test results
   uses: actions/upload-artifact@v2
   with:
@@ -367,13 +388,13 @@ The framework generates JUnit XML reports suitable for CI systems:
 
 ### Common Issues
 
-1. **Home Assistant not starting**: 
+1. **Home Assistant not starting**:
    - Check configuration validation: `docker logs config-validator`
    - Check Home Assistant logs: `make logs` or `docker-compose logs home-assistant`
    - Common cause: Invalid configuration.yaml syntax or settings
-2. **Tests timing out**: Increase timeout in `pyproject.toml` under `[tool.pytest.ini_options]`
-3. **Permission errors**: Ensure Docker has necessary permissions
-4. **Token issues**: Regenerate token and update `.env`
+1. **Tests timing out**: Increase timeout in `pyproject.toml` under `[tool.pytest.ini_options]`
+1. **Permission errors**: Ensure Docker has necessary permissions
+1. **Token issues**: Regenerate token and update `.env`
 
 ### Clean Environment
 
@@ -385,9 +406,9 @@ make clean
 ## Contributing
 
 1. Write tests for your automations
-2. Ensure all tests pass: `make test`
-3. Check code quality: `make lint`
-4. Update documentation as needed
+1. Ensure all tests pass: `make test`
+1. Check code quality: `make lint`
+1. Update documentation as needed
 
 ## License
 

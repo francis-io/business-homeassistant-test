@@ -1,14 +1,14 @@
 """Authentication helpers for testing."""
 
 import os
-from typing import Optional
+from typing import Any
 
 
 class TestAuth:
     """Handle authentication for tests."""
 
     @staticmethod
-    def get_token() -> Optional[str]:
+    def get_token() -> str | None:
         """Get authentication token with fallback strategies."""
         # 1. Try environment variable
         token = os.getenv("HA_TEST_TOKEN")
@@ -27,7 +27,7 @@ class TestAuth:
         return None
 
     @staticmethod
-    def get_headers(token: Optional[str] = None) -> dict:
+    def get_headers(token: str | None = None) -> dict[str, str]:
         """Get headers for API requests."""
         headers = {"Content-Type": "application/json"}
 
@@ -50,16 +50,22 @@ class TestAuth:
 class MockHAClient:
     """Mock Home Assistant client that doesn't require authentication."""
 
-    def __init__(self, base_url: str = "http://localhost:8123"):
+    def __init__(self, base_url: str = "http://localhost:8123") -> None:
+        """Initialize MockHAClient with base URL."""
         self.base_url = base_url
-        self.states = {}
-        self.service_calls = []
+        self.states: dict[str, dict[str, Any]] = {}
+        self.service_calls: list[dict[str, Any]] = []
 
-    async def get_state(self, entity_id: str):
+    async def get_state(self, entity_id: str) -> dict[str, Any]:
         """Get mocked state."""
         return self.states.get(entity_id, {"state": "unknown"})
 
-    async def set_state(self, entity_id: str, state: str, attributes=None):
+    async def set_state(
+        self,
+        entity_id: str,
+        state: str,
+        attributes: dict[str, Any] | None = None,
+    ) -> bool:
         """Set mocked state."""
         self.states[entity_id] = {
             "entity_id": entity_id,
@@ -68,14 +74,14 @@ class MockHAClient:
         }
         return True
 
-    async def call_service(self, domain: str, service: str, data=None):
+    async def call_service(
+        self, domain: str, service: str, data: dict[str, Any] | None = None
+    ) -> bool:
         """Record service call."""
-        self.service_calls.append(
-            {"domain": domain, "service": service, "data": data or {}}
-        )
+        self.service_calls.append({"domain": domain, "service": service, "data": data or {}})
         return True
 
-    async def wait_for_state(self, entity_id: str, expected_state: str, timeout=10):
+    async def wait_for_state(self, entity_id: str, expected_state: str, timeout: int = 10) -> bool:
         """Mock wait for state."""
         # In mock, immediately return true if state matches
         current = self.states.get(entity_id, {})

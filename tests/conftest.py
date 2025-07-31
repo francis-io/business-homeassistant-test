@@ -3,35 +3,36 @@
 import asyncio
 import os
 import time
+from collections.abc import AsyncGenerator
 from dataclasses import dataclass
-from typing import AsyncGenerator
-from unittest.mock import Mock
 
 import aiohttp
 import pytest
 
 # Import our common test utilities for integration tests
 try:
-    from tests.common import async_test_home_assistant, async_mock_service
+    from tests.common import async_mock_service, async_test_home_assistant
+
     HAS_COMMON = True
 except ImportError:
     HAS_COMMON = False
 
 # Import fast_hass fixture
 try:
-    from tests.helpers.fast_ha_test import fast_hass, mock_service_calls
+    from tests.helpers.fast_ha_test import fast_hass  # noqa: F401
 except ImportError:
     # Create mock fixture when HA not available
     @pytest.fixture
     async def fast_hass():
         """Mock fast_hass fixture when HA not available."""
         from tests.helpers.ha_mocks import MockHomeAssistant
+
         mock_ha = MockHomeAssistant()
         # Add methods to match FastHATest interface
         mock_ha.add_automation = lambda config: None
-        mock_ha.trigger_automation = lambda id, skip_condition=False: None
+        mock_ha.trigger_automation = lambda automation_id, skip_condition=False: None
         mock_ha.wait_for_state = lambda entity_id, state, timeout=5: True
-        yield mock_ha
+        return mock_ha
 
 
 @dataclass
@@ -81,9 +82,7 @@ class HAClient:
         # For testing, we'll simulate by calling the automation reload service
         return await self.call_service("automation", "reload")
 
-    async def wait_for_state(
-        self, entity_id: str, expected_state: str, timeout: int = 10
-    ):
+    async def wait_for_state(self, entity_id: str, expected_state: str, timeout: int = 10):
         """Wait for entity to reach expected state."""
         start = time.time()
         while time.time() - start < timeout:
@@ -118,7 +117,7 @@ async def ha_client() -> AsyncGenerator[HAClient, None]:
                 async with session.get(f"{base_url}/api/") as resp:
                     if resp.status == 200:
                         break
-        except:
+        except Exception:
             pass
         if i < max_attempts - 1:
             await asyncio.sleep(2)
@@ -150,7 +149,7 @@ def mock_notification_service():
 
 
 @pytest.fixture
-async def clean_ha_state(ha_client):
+async def _clean_ha_state(ha_client):
     """Ensure clean state before each test."""
     # Reset common test entities to known states
     test_entities = [
@@ -178,13 +177,14 @@ async def clean_ha_state(ha_client):
 
 # New Home Assistant-style fixtures
 if HAS_COMMON:
+
     @pytest.fixture
     async def hass():
-        """Provide a test Home Assistant instance using our common utilities."""
+        """Provide a test Home Assistant instance."""
         hass = await async_test_home_assistant()
         yield hass
         await hass.async_stop()
-    
+
     @pytest.fixture
     def mock_service(hass):
         """Provide a helper to mock services."""

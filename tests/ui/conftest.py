@@ -1,7 +1,8 @@
 """Minimal UI test configuration for pytest-playwright."""
 
-import pytest
 import os
+
+import pytest
 
 
 @pytest.fixture

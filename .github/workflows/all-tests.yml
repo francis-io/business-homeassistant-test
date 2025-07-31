@@ -1,10 +1,11 @@
+---
 name: All Tests
 
 on:
   pull_request:
-    branches: [ main, master ]
+    branches: [main, master]
   push:
-    branches: [ main, master ]
+    branches: [main, master]
   workflow_dispatch:
 
 jobs:
@@ -16,111 +17,113 @@ jobs:
       pull-requests: write
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
 
-    - name: Install UV
-      run: |
-        curl -LsSf https://astral.sh/uv/install.sh | sh
-        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+      - name: Install UV
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
-    - name: Setup Python environment
-      run: |
-        uv venv --python 3.11
-        source .venv/bin/activate
-        uv pip install -r tests/requirements.txt
-        uv pip install -r tests/integration/requirements.txt
+      - name: Setup Python environment
+        run: |
+          uv venv --python 3.11
+          source .venv/bin/activate
+          uv pip install -r tests/requirements.txt
+          uv pip install -r tests/integration/requirements.txt
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-    - name: Install Docker Compose
-      run: |
-        # Download and install Docker Compose v2.39.1
-        sudo curl -L "https://github.com/docker/compose/releases/download/v2.39.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-        sudo chmod +x /usr/local/bin/docker-compose
-        
-        # Verify installation
-        docker-compose --version
+      - name: Install Docker Compose
+        run: |
+          # Download and install Docker Compose v2.39.1
+          COMPOSE_URL="https://github.com/docker/compose/releases/download/v2.39.1"
+          sudo curl -L "${COMPOSE_URL}/docker-compose-$(uname -s)-$(uname -m)" \
+            -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
 
-    - name: Run all tests
-      run: |
-        source .venv/bin/activate
-        make test
+          # Verify installation
+          docker-compose --version
 
-    - name: Upload test results
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: test-results
-        path: reports/
-        retention-days: 30
+      - name: Run all tests
+        run: |
+          source .venv/bin/activate
+          make test
 
-    - name: Upload test logs
-      uses: actions/upload-artifact@v4
-      if: failure()
-      with:
-        name: test-logs
-        path: |
-          tests/e2e/docker/*.log
-          tests/e2e/docker/**/*.log
-          tests/ui/docker/*.log
-          tests/ui/docker/**/*.log
-        retention-days: 7
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: reports/
+          retention-days: 30
 
-    - name: Comment PR with results
-      uses: actions/github-script@v7
-      if: github.event_name == 'pull_request' && always()
-      continue-on-error: true
-      with:
-        script: |
-          const fs = require('fs');
-          const path = require('path');
-          
-          try {
-            // Check if test passed
-            const testPassed = process.env.GITHUB_JOB_STATUS === 'success';
-            
-            // Try to read the last report file
-            let reportInfo = '';
+      - name: Upload test logs
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: test-logs
+          path: |
+            tests/e2e/docker/*.log
+            tests/e2e/docker/**/*.log
+            tests/ui/docker/*.log
+            tests/ui/docker/**/*.log
+          retention-days: 7
+
+      - name: Comment PR with results
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request' && always()
+        continue-on-error: true
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
             try {
-              const lastReport = fs.readFileSync('reports/.last_report', 'utf8');
-              const reportFile = lastReport.match(/REPORT_FILE=(.*)/)?.[1];
-              if (reportFile) {
-                reportInfo = `\n📄 Test report: \`${reportFile}\``;
+              // Check if test passed
+              const testPassed = process.env.GITHUB_JOB_STATUS === 'success';
+
+              // Try to read the last report file
+              let reportInfo = '';
+              try {
+                const lastReport = fs.readFileSync('reports/.last_report', 'utf8');
+                const reportFile = lastReport.match(/REPORT_FILE=(.*)/)?.[1];
+                if (reportFile) {
+                  reportInfo = `\n📄 Test report: \`${reportFile}\``;
+                }
+              } catch (e) {
+                // Ignore if file doesn't exist
               }
-            } catch (e) {
-              // Ignore if file doesn't exist
+
+              const comment = `## Test Results
+
+              ${testPassed ? '✅ **All tests passed!**' : '❌ **Tests failed**'}${reportInfo}
+
+              Test suite includes:
+              - Unit tests (logic + mock)
+              - Integration tests
+              - E2E tests (Docker)
+              - UI tests (Playwright in Docker)
+
+              [View full workflow run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`;
+
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            } catch (error) {
+              console.log('Unable to comment on PR:', error.message);
+              console.log('This is likely due to permissions. The comment would have been:');
+              console.log('---');
+              console.log(`E2E Tests ${process.env.GITHUB_JOB_STATUS === 'success' ? 'PASSED' : 'FAILED'}`);
             }
-            
-            const comment = `## Test Results
-            
-            ${testPassed ? '✅ **All tests passed!**' : '❌ **Tests failed**'}${reportInfo}
-            
-            Test suite includes:
-            - Unit tests (logic + mock)  
-            - Integration tests
-            - E2E tests (Docker)
-            - UI tests (Playwright in Docker)
-            
-            [View full workflow run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`;
-            
-            await github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: comment
-            });
-          } catch (error) {
-            console.log('Unable to comment on PR:', error.message);
-            console.log('This is likely due to permissions. The comment would have been:');
-            console.log('---');
-            console.log(`E2E Tests ${process.env.GITHUB_JOB_STATUS === 'success' ? 'PASSED' : 'FAILED'}`);
-          }
-      env:
-        GITHUB_JOB_STATUS: ${{ job.status }}
+        env:
+          GITHUB_JOB_STATUS: ${{ job.status }}

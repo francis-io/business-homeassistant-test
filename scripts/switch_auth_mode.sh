@@ -16,7 +16,7 @@ case $MODE in
         echo "✅ Bypass auth enabled - no token required for testing"
         echo "   Trusted networks: 127.0.0.1, Docker networks (172.x.x.x)"
         ;;
-    
+
     token)
         echo "Setting up token authentication..."
         # Restore original configuration
@@ -29,7 +29,7 @@ case $MODE in
         echo "   2. Generate a long-lived access token"
         echo "   3. Set HA_TEST_TOKEN environment variable"
         ;;
-    
+
     *)
         echo "❌ Unknown mode: $MODE"
         echo "Usage: $0 [bypass|token]"

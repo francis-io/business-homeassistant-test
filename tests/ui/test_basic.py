@@ -8,24 +8,24 @@ def test_basic_navigation(page, ha_url):
     """Test basic navigation to Home Assistant."""
     # Navigate to Home Assistant
     page.goto(ha_url, wait_until="networkidle")
-    
+
     # Check the title
     assert "Home Assistant" in page.title() or "Loading" in page.title()
-    
+
     # Take a screenshot for debugging
     page.screenshot(path="/reports/test_basic_navigation.png")
     print(f"Page title: {page.title()}")
 
 
-@pytest.mark.ui  
+@pytest.mark.ui
 def test_parallel_isolation_sync(page, ha_url):
     """Test that pages are isolated in parallel execution."""
     # Navigate to HA
     page.goto(ha_url, wait_until="networkidle")
-    
+
     # Set a value in localStorage
     page.evaluate("localStorage.setItem('test_key', 'test_value')")
-    
+
     # Verify we can read it back
     value = page.evaluate("localStorage.getItem('test_key')")
     assert value == "test_value"

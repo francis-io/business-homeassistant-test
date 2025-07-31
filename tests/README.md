@@ -6,12 +6,12 @@ This testing framework provides multiple levels of testing for Home Assistant au
 
 ## Does Each Test Type Use Home Assistant?
 
-| Test Type | Uses Real HA? | What It Uses | Requirements |
-|-----------|---------------|--------------|--------------|
-| **Unit/Logic** | ❌ No | Pure Python functions | None |
-| **Unit/Mock** | ❌ No | Mock objects simulating HA | None |
-| **Integration** | ✅ Yes | Real HA core components | Python 3.11+ & HA |
-| **UI** | ✅ Yes | Real HA with browser automation | HA + Playwright browsers |
+| Test Type       | Uses Real HA? | What It Uses                    | Requirements             |
+| --------------- | ------------- | ------------------------------- | ------------------------ |
+| **Unit/Logic**  | ❌ No         | Pure Python functions           | None                     |
+| **Unit/Mock**   | ❌ No         | Mock objects simulating HA      | None                     |
+| **Integration** | ✅ Yes        | Real HA core components         | Python 3.11+ & HA        |
+| **UI**          | ✅ Yes        | Real HA with browser automation | HA + Playwright browsers |
 
 ## Directory Structure
 
@@ -73,24 +73,28 @@ make test:ui:debug      # Run in debug mode (slow, single worker)
 ## Choosing the Right Test Type
 
 ### Use Logic Tests When:
+
 - Testing business rules and calculations
 - Validating decision logic
 - You want the fastest tests
 - No Home Assistant available
 
 ### Use Mock Tests When:
+
 - Testing service call patterns
 - Verifying state transitions
 - Testing automation workflows
 - No Home Assistant available
 
 ### Use Integration Tests When:
+
 - Testing real YAML configurations
 - Validating actual HA behavior
 - Testing component interactions
 - Home Assistant is available
 
 ### Use UI Tests When:
+
 - Testing user interface interactions
 - Validating visual elements
 - Testing user workflows
@@ -99,20 +103,22 @@ make test:ui:debug      # Run in debug mode (slow, single worker)
 
 ## Test Execution Speed
 
-| Test Type | Speed | Parallel | Isolation |
-|-----------|-------|----------|-----------|
-| Logic | ~1ms | ✅ Yes | Complete |
-| Mock | ~10ms | ✅ Yes | Complete |
-| Integration | ~500ms | ✅ Yes | Process-level |
-| UI | ~2-5s | ✅ Yes | Browser context |
+| Test Type   | Speed  | Parallel | Isolation       |
+| ----------- | ------ | -------- | --------------- |
+| Logic       | ~1ms   | ✅ Yes   | Complete        |
+| Mock        | ~10ms  | ✅ Yes   | Complete        |
+| Integration | ~500ms | ✅ Yes   | Process-level   |
+| UI          | ~2-5s  | ✅ Yes   | Browser context |
 
 ## Current Testing Status
 
 ✅ **Working Tests** (90 tests):
+
 - 63 logic tests - Pure Python automation logic
 - 27 mock tests - Simulated HA behavior
 
 ⚠️ **Skipped Tests** (15 tests):
+
 - Integration tests - Require Python 3.11+ for Home Assistant
 
 ## Running All Tests
@@ -136,12 +142,12 @@ make test:unit
 ```python
 from tests.helpers.automation_validation import (
     validate_automation_config,  # Returns (is_valid, errors)
-    assert_valid_automation,     # Raises ValidationError if invalid
-    get_automation_summary      # Human-readable description
+    assert_valid_automation,  # Raises ValidationError if invalid
+    get_automation_summary,  # Human-readable description
 )
 
 # Load your automation
-with open('automation.yaml') as f:
+with open("automation.yaml") as f:
     config = yaml.safe_load(f)
 
 # Method 1: Check and handle errors
@@ -163,7 +169,7 @@ print(get_automation_summary(config))
 - ✅ **Structure**: Required fields (trigger/action), correct data types
 - ✅ **IDs**: Automation ID format and uniqueness within config
 - ✅ **Triggers**: Valid platforms, required fields, time formats
-- ✅ **Conditions**: Valid types, logical operators, required fields  
+- ✅ **Conditions**: Valid types, logical operators, required fields
 - ✅ **Actions**: Service format (domain.service), delay formats
 - ✅ **Service Data**: Domain-specific validation (brightness 0-100, etc.)
 - ✅ **Time Formats**: HH:MM or HH:MM:SS validation
@@ -186,6 +192,7 @@ action:
 ```
 
 Validation output:
+
 ```
 - Trigger 0 has invalid platform 'invalid_platform'
 - Time trigger 0 has invalid time format: 25:00
@@ -203,7 +210,7 @@ from tests.helpers.automation_test_base import AutomationTestBase
 
 class TestMyAutomation(AutomationTestBase):
     AUTOMATION_FILE = "path/to/automation.yaml"
-    
+
     async def test_automation(self, hass, automation_config, service_tracker):
         # automation_config is pre-validated ✅
         # Validation errors fail the test with clear messages
@@ -213,10 +220,10 @@ class TestMyAutomation(AutomationTestBase):
 ### Best Practices
 
 1. **Always validate** YAML automations in tests
-2. **Validate early** - In fixtures or setup methods
-3. **Use clear messages** - The validation errors are descriptive
-4. **Test invalid configs** - Write tests for validation itself
-5. **Share validation** - Use the base class for consistency
+1. **Validate early** - In fixtures or setup methods
+1. **Use clear messages** - The validation errors are descriptive
+1. **Test invalid configs** - Write tests for validation itself
+1. **Share validation** - Use the base class for consistency
 
 ### Bulk Validation Script
 

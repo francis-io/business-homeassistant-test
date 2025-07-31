@@ -1,3 +1,4 @@
+---
 # Minimal Home Assistant Configuration - Bypass Onboarding
 homeassistant:
   name: Home

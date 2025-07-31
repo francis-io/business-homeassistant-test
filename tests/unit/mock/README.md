@@ -22,13 +22,13 @@ These tests validate Home Assistant automation **behavior** using mock objects t
 hass = MockHomeAssistant()
 
 # Set a state (simulated)
-hass.states.set('light.bedroom', 'off')
+hass.states.set("light.bedroom", "off")
 
 # Call a service (captured but not executed)
-hass.services.call('light', 'turn_on', {'entity_id': 'light.bedroom'})
+hass.services.call("light", "turn_on", {"entity_id": "light.bedroom"})
 
 # Verify the state changed (manually updated in test)
-assert hass.states.get('light.bedroom').state == 'on'
+assert hass.states.get("light.bedroom").state == "on"
 ```
 
 ## Mock Components Used
@@ -85,11 +85,11 @@ pytest tests/unit/mock --cov=tests.helpers.ha_mocks
 
 1. **State Updates**: In real HA, calling `light.turn_on` automatically updates the light's state. In mocks, you must manually update it.
 
-2. **Service Validation**: Real HA validates service parameters. Mocks accept any parameters.
+1. **Service Validation**: Real HA validates service parameters. Mocks accept any parameters.
 
-3. **Async Behavior**: Real HA is fully async. Mocks simulate this but may not capture all timing nuances.
+1. **Async Behavior**: Real HA is fully async. Mocks simulate this but may not capture all timing nuances.
 
-4. **Component Loading**: Real HA loads actual component code. Mocks just track calls.
+1. **Component Loading**: Real HA loads actual component code. Mocks just track calls.
 
 ## Summary
 

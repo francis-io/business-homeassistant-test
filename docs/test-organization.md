@@ -21,6 +21,7 @@ tests/
 **Purpose**: Test automation logic as pure Python functions without any Home Assistant dependencies.
 
 **Characteristics**:
+
 - No imports from Home Assistant
 - Test business logic directly
 - Execute in milliseconds
@@ -28,11 +29,13 @@ tests/
 - Easy to debug
 
 **Examples**:
+
 - `test_time_based_light_logic.py` - Time calculations, brightness logic
 - `test_notification_logic.py` - Priority determination, rate limiting
 - `test_zone_entry_logic.py` - Presence detection, occupancy calculations
 
 **Running**:
+
 ```bash
 make test-logic              # Run all logic tests in parallel
 make test-unit-sequential    # Run sequentially for debugging
@@ -43,17 +46,20 @@ make test-unit-sequential    # Run sequentially for debugging
 **Purpose**: Test Home Assistant automation behavior using mock components.
 
 **Characteristics**:
+
 - Use mock Home Assistant objects
 - Test service calls and state changes
 - Verify automation workflows
 - No real HA instance needed
 
 **Examples**:
+
 - `test_time_based_light.py` - Mock light automation behavior
 - `test_notification.py` - Mock notification service calls
 - `test_zone_entry.py` - Mock zone entry triggers
 
 **Running**:
+
 ```bash
 make test-mock    # Run all mock tests in parallel
 ```
@@ -65,6 +71,7 @@ make test-mock    # Run all mock tests in parallel
 **Purpose**: Test actual YAML automations with real HA core components in an in-memory instance.
 
 **Characteristics**:
+
 - Use real HA core components
 - Validate YAML syntax and execution
 - Real state machine and service registry
@@ -74,6 +81,7 @@ make test-mock    # Run all mock tests in parallel
 **Status**: Currently skipped due to Python version requirements (need Python 3.11+).
 
 **Running**:
+
 ```bash
 make test:integration    # Run all integration tests
 ```
@@ -97,7 +105,7 @@ Run specific automation scenarios:
 
 ```bash
 make test-lights          # Time-based light tests
-make test-notifications   # Notification tests  
+make test-notifications   # Notification tests
 make test-zones          # Zone entry tests
 ```
 
@@ -115,18 +123,21 @@ pytest tests/unit/logic -v -n 0    # Disable parallelism
 ### 1. Choose the Right Test Type
 
 **Use Logic Tests When**:
+
 - Testing business rules
 - Validating calculations
 - Checking conditions
 - Testing pure functions
 
 **Use Mock Tests When**:
+
 - Testing service calls
 - Verifying state changes
 - Testing automation flow
 - Simulating HA behavior
 
 **Use Integration Tests When**:
+
 - Testing real YAML configs
 - Validating component interactions
 - Testing external integrations
@@ -135,6 +146,7 @@ pytest tests/unit/logic -v -n 0    # Disable parallelism
 ### 2. Test Organization
 
 Each test file should:
+
 - Have a clear focus (one automation type)
 - Use descriptive test names
 - Group related tests in classes
@@ -143,6 +155,7 @@ Each test file should:
 ### 3. Parallel Safety
 
 Ensure tests are parallel-safe:
+
 - No shared state between tests
 - Unique entity names
 - Independent fixtures
@@ -163,6 +176,7 @@ Ensure tests are parallel-safe:
 # tests/unit/logic/test_new_automation_logic.py
 from tests.helpers.automation_logic import my_logic_function
 
+
 def test_my_logic():
     result = my_logic_function(input1, input2)
     assert result == expected_value
@@ -174,13 +188,13 @@ def test_my_logic():
 # tests/unit/mock/test_new_automation.py
 async def test_my_automation(hass):
     # Setup
-    hass.states.set('sensor.test', 'value')
-    
+    hass.states.set("sensor.test", "value")
+
     # Action
-    await hass.services.call('automation', 'trigger')
-    
+    await hass.services.call("automation", "trigger")
+
     # Assert
-    assert hass.states.get('light.test').state == 'on'
+    assert hass.states.get("light.test").state == "on"
 ```
 
 ### 3. New Integration Test
@@ -189,7 +203,7 @@ async def test_my_automation(hass):
 # tests/integration/test_new_integration.py
 @pytest.mark.integration
 async def test_real_automation(ha_client):
-    await ha_client.set_state('sensor.test', 'value')
-    result = await ha_client.trigger_automation('my_automation')
+    await ha_client.set_state("sensor.test", "value")
+    result = await ha_client.trigger_automation("my_automation")
     assert result is True
 ```

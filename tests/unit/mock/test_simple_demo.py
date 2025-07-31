@@ -1,19 +1,21 @@
 """Simple demo tests that work without Home Assistant."""
 
-import asyncio
+from typing import Any
 from unittest.mock import AsyncMock, Mock
 
 import aiohttp
 import pytest
 from freezegun import freeze_time
 
+from tests.helpers.ha_mocks import MockHomeAssistant  # noqa: F401
 
-def test_simple_addition():
+
+def test_simple_addition() -> None:
     """Test basic functionality."""
     assert 2 + 2 == 4
 
 
-def test_mock_usage():
+def test_mock_usage() -> None:
     """Test that mocking works."""
     mock_service = Mock()
     mock_service.call_service = Mock(return_value={"status": "ok"})
@@ -25,7 +27,7 @@ def test_mock_usage():
 
 
 @pytest.mark.asyncio
-async def test_async_mock():
+async def test_async_mock() -> None:
     """Test async functionality."""
     mock_client = AsyncMock()
     mock_client.get_state = AsyncMock(return_value={"state": "on"})
@@ -37,7 +39,7 @@ async def test_async_mock():
 
 
 @pytest.mark.asyncio
-async def test_aiohttp_mock():
+async def test_aiohttp_mock() -> None:
     """Test HTTP mocking with aioresponses."""
     from aioresponses import aioresponses
 
@@ -51,8 +53,8 @@ async def test_aiohttp_mock():
         assert data == {"test": "data"}
 
 
-@freeze_time("2024-01-15 18:30:00")
-def test_freezegun_time():
+@freeze_time("2024-01-15 18:30:00")  # type: ignore[misc]
+def test_freezegun_time() -> None:
     """Test time manipulation."""
     from datetime import datetime
 
@@ -69,7 +71,7 @@ def test_freezegun_time():
 class TestLightAutomation:
     """Test suite for light automation logic."""
 
-    def test_should_turn_on_after_sunset(self):
+    def test_should_turn_on_after_sunset(self) -> None:
         """Test light should turn on after sunset."""
         # Mock sunset check
         is_after_sunset = Mock(return_value=True)
@@ -80,7 +82,7 @@ class TestLightAutomation:
 
         assert should_turn_on is True
 
-    def test_should_not_turn_on_before_sunset(self):
+    def test_should_not_turn_on_before_sunset(self) -> None:
         """Test light should not turn on before sunset."""
         # Mock sunset check
         is_after_sunset = Mock(return_value=False)
@@ -95,14 +97,12 @@ class TestLightAutomation:
 class TestNotificationLogic:
     """Test suite for notification logic."""
 
-    def test_notification_on_water_leak(self):
+    def test_notification_on_water_leak(self) -> None:
         """Test notification is sent when water leak detected."""
-        notifications = []
+        notifications: list[dict[str, Any]] = []
 
-        def send_notification(title, message, priority="normal"):
-            notifications.append(
-                {"title": title, "message": message, "priority": priority}
-            )
+        def send_notification(title: str, message: str, priority: str = "normal") -> None:
+            notifications.append({"title": title, "message": message, "priority": priority})
 
         # Simulate water leak
         water_leak_detected = True
@@ -123,17 +123,17 @@ class TestZoneLogic:
     """Test suite for zone entry logic."""
 
     @pytest.mark.asyncio
-    async def test_welcome_home_actions(self):
+    async def test_welcome_home_actions(self) -> None:
         """Test actions when person arrives home."""
-        actions_performed = []
+        actions_performed: list[str] = []
 
-        async def turn_on_lights():
+        def turn_on_lights() -> None:
             actions_performed.append("lights_on")
 
-        async def set_temperature(temp):
+        def set_temperature(temp: int) -> None:
             actions_performed.append(f"temp_set_{temp}")
 
-        async def send_notification(msg):
+        def send_notification(msg: str) -> None:
             actions_performed.append(f"notified_{msg}")
 
         # Simulate person arriving home at 18:00
@@ -141,9 +141,9 @@ class TestZoneLogic:
         person_home = True
 
         if person_home and 17 <= current_hour < 22:
-            await turn_on_lights()
-            await set_temperature(22)
-            await send_notification("welcome")
+            turn_on_lights()
+            set_temperature(22)
+            send_notification("welcome")
 
         assert "lights_on" in actions_performed
         assert "temp_set_22" in actions_performed

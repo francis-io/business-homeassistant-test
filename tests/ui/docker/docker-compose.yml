@@ -1,3 +1,4 @@
+---
 services:
   home-assistant-test-config-validator:
     container_name: "${NAME_PREFIX}-config-validator"
@@ -65,7 +66,11 @@ services:
              echo \"Running UI tests at $$(date '+%Y-%m-%d %H:%M:%S')...\" &&
              PYTEST_ARGS='-v --tb=long --junit-xml=/reports/$${REPORT_FILE}' &&
              if [ \"$${HEADED}\" = \"true\" ]; then PYTEST_ARGS=\"$${PYTEST_ARGS} --headed\"; fi &&
-             if [ \"$${DEBUG}\" = \"true\" ]; then PYTEST_ARGS=\"$${PYTEST_ARGS} --slowmo=$${SLOWMO} -n 0\"; else PYTEST_ARGS=\"$${PYTEST_ARGS} -n 2\"; fi &&
+             if [ \"$${DEBUG}\" = \"true\" ]; then
+               PYTEST_ARGS=\"$${PYTEST_ARGS} --slowmo=$${SLOWMO} -n 0\";
+             else
+               PYTEST_ARGS=\"$${PYTEST_ARGS} -n 2\";
+             fi &&
              python -m pytest tests/ui --ignore=tests/ui/docker $${PYTEST_ARGS} &&
              echo \"REPORT_FILE=$${REPORT_FILE}\" > /reports/.last_report || true"
     restart: "no"

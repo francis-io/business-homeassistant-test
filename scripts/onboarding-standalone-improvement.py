@@ -1,15 +1,21 @@
+"""Standalone Home Assistant onboarding script with improved features."""
+
 import argparse
 import http.client
 import json
-import time
 import logging
-from urllib.parse import urlparse
 import os
+import time
+from urllib.parse import urlparse
 
 # ------------------ CLI Argument Parsing ------------------
 parser = argparse.ArgumentParser(description="Home Assistant onboarding script")
 
-parser.add_argument("--base-url", default="http://localhost:8124", help="Base URL of the Home Assistant instance")
+parser.add_argument(
+    "--base-url",
+    default="http://localhost:8124",
+    help="Base URL of the Home Assistant instance",
+)
 parser.add_argument("--username", default="admin", help="Username for the user")
 parser.add_argument("--password", default="admin", help="Password for the user")
 parser.add_argument("--name", default="admin", help="Full name of the user")
@@ -18,51 +24,64 @@ parser.add_argument("--timezone", default="UTC", help="Timezone (e.g. 'UTC')")
 parser.add_argument("--location-name", default="Home", help="Name of the location")
 parser.add_argument("--latitude", type=float, default=0.0, help="Latitude")
 parser.add_argument("--longitude", type=float, default=0.0, help="Longitude")
-parser.add_argument("--unit-system", choices=["metric", "imperial"], default="metric", help="Unit system")
+parser.add_argument(
+    "--unit-system",
+    choices=["metric", "imperial"],
+    default="metric",
+    help="Unit system",
+)
 parser.add_argument("--currency", default="gbp", help="Currency code (e.g. gbp, usd)")
 parser.add_argument("--country", default="gb", help="Country code (e.g. gb, us)")
 parser.add_argument("--elevation", type=int, default=0, help="Elevation in meters")
 parser.add_argument("--log-level", default="DEBUG", help="Log level (DEBUG, INFO, etc.)")
-parser.add_argument("--wait-timeout", type=int, default=30, help="Max seconds to wait for server to respond")
+parser.add_argument(
+    "--wait-timeout",
+    type=int,
+    default=30,
+    help="Max seconds to wait for server to respond",
+)
 
 args = parser.parse_args()
 
 # ------------------ Configuration ------------------
-BASE_URL      = args.base_url
-CLIENT_ID     = BASE_URL
-USERNAME      = args.username
-PASSWORD      = args.password
-NAME          = args.name
-LANGUAGE      = args.language
-TIMEZONE      = args.timezone
+BASE_URL = args.base_url
+CLIENT_ID = BASE_URL
+USERNAME = args.username
+PASSWORD = args.password
+NAME = args.name
+LANGUAGE = args.language
+TIMEZONE = args.timezone
 LOCATION_NAME = args.location_name
-LATITUDE      = args.latitude
-LONGITUDE     = args.longitude
-UNIT_SYSTEM   = args.unit_system
-CURRENCY      = args.currency
-COUNTRY       = args.country
-ELEVATION     = args.elevation
-LOG_LEVEL     = args.log_level.upper()
-WAIT_TIMEOUT  = args.wait_timeout
+LATITUDE = args.latitude
+LONGITUDE = args.longitude
+UNIT_SYSTEM = args.unit_system
+CURRENCY = args.currency
+COUNTRY = args.country
+ELEVATION = args.elevation
+LOG_LEVEL = args.log_level.upper()
+WAIT_TIMEOUT = args.wait_timeout
 
 RETRY_INTERVAL = 1
 MAX_RETRIES = 5
 HTTP_TIMEOUT = 5
-TOKEN_FILE    = "/tmp/onboarding_token.json"
+TOKEN_FILE = "/tmp/onboarding_token.json"
 
 # ------------------ Logging ------------------
 logging.basicConfig(
     level=getattr(logging, LOG_LEVEL, logging.DEBUG),
-    format="%(asctime)s [%(levelname)s] %(message)s"
+    format="%(asctime)s [%(levelname)s] %(message)s",
 )
 log = logging.getLogger(__name__)
 
 # ------------------ Connection Helpers ------------------
 parsed_url = urlparse(BASE_URL)
-conn_class = http.client.HTTPSConnection if parsed_url.scheme == "https" else http.client.HTTPConnection
+conn_class = (
+    http.client.HTTPSConnection if parsed_url.scheme == "https" else http.client.HTTPConnection
+)
 
 if not parsed_url.hostname or not parsed_url.port:
     raise ValueError(f"Invalid BASE_URL: {BASE_URL}")
+
 
 def with_http_connection(func):
     def wrapper(*args, **kwargs):
@@ -75,7 +94,9 @@ def with_http_connection(func):
                 if attempt == MAX_RETRIES:
                     raise
                 time.sleep(RETRY_INTERVAL * attempt)
+
     return wrapper
+
 
 @with_http_connection
 def wait_for_server(conn):
@@ -93,12 +114,13 @@ def wait_for_server(conn):
         time.sleep(RETRY_INTERVAL)
     raise TimeoutError(f"Timed out after {WAIT_TIMEOUT}s waiting for server.")
 
+
 @with_http_connection
 def api_request(conn, method, path, body=None, headers=None):
     headers = headers or {}
     request_body = json.dumps(body) if body else None
     if request_body:
-        headers['Content-Type'] = 'application/json'
+        headers["Content-Type"] = "application/json"
 
     log.debug(f"{method} {path} headers={headers} body={request_body}")
     conn.request(method, path, body=request_body, headers=headers)
@@ -117,30 +139,37 @@ def api_request(conn, method, path, body=None, headers=None):
             raise
     return {}
 
+
 def get_status():
     return api_request("GET", "/api/onboarding")
 
+
 def create_user():
-    return api_request("POST", "/api/onboarding/users", {
-        "client_id": CLIENT_ID,
-        "name": NAME,
-        "username": USERNAME,
-        "password": PASSWORD,
-        "language": LANGUAGE
-    })["auth_code"]
+    return api_request(
+        "POST",
+        "/api/onboarding/users",
+        {
+            "client_id": CLIENT_ID,
+            "name": NAME,
+            "username": USERNAME,
+            "password": PASSWORD,
+            "language": LANGUAGE,
+        },
+    )["auth_code"]
+
 
 @with_http_connection
 def exchange_token(conn, code):
     if os.path.exists(TOKEN_FILE):
         try:
-            with open(TOKEN_FILE, "r") as f:
+            with open(TOKEN_FILE) as f:
                 data = json.load(f)
                 log.info("Reusing existing access token from /tmp")
                 return data["access_token"]
         except Exception:
             pass  # fall back to full flow if file is corrupt
 
-    headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+    headers = {"Content-Type": "application/x-www-form-urlencoded"}
     body = f"grant_type=authorization_code&code={code}&client_id={CLIENT_ID}"
     conn.request("POST", "/auth/token", body=body, headers=headers)
     resp = conn.getresponse()
@@ -158,29 +187,43 @@ def exchange_token(conn, code):
         log.error(f"Error parsing token response: {e} raw={raw}")
         raise
 
+
 def submit_core(token):
-    api_request("POST", "/api/onboarding/core_config", {
-        "location_name": LOCATION_NAME,
-        "time_zone": TIMEZONE,
-        "unit_system": UNIT_SYSTEM,
-        "currency": CURRENCY,
-        "country": COUNTRY,
-        "language": LANGUAGE,
-        "latitude": LATITUDE,
-        "longitude": LONGITUDE,
-        "elevation": ELEVATION
-    }, headers={"Authorization": f"Bearer {token}"})
+    api_request(
+        "POST",
+        "/api/onboarding/core_config",
+        {
+            "location_name": LOCATION_NAME,
+            "time_zone": TIMEZONE,
+            "unit_system": UNIT_SYSTEM,
+            "currency": CURRENCY,
+            "country": COUNTRY,
+            "language": LANGUAGE,
+            "latitude": LATITUDE,
+            "longitude": LONGITUDE,
+            "elevation": ELEVATION,
+        },
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
 
 def submit_analytics(token):
-    api_request("POST", "/api/onboarding/analytics", {
-        "preferences": {"base": False, "diagnostics": False, "usage": False}
-    }, headers={"Authorization": f"Bearer {token}"})
+    api_request(
+        "POST",
+        "/api/onboarding/analytics",
+        {"preferences": {"base": False, "diagnostics": False, "usage": False}},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
 
 def submit_integration(token):
-    api_request("POST", "/api/onboarding/integration", {
-        "client_id": CLIENT_ID,
-        "redirect_uri": f"{BASE_URL}/lovelace"
-    }, headers={"Authorization": f"Bearer {token}"})
+    api_request(
+        "POST",
+        "/api/onboarding/integration",
+        {"client_id": CLIENT_ID, "redirect_uri": f"{BASE_URL}/lovelace"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
 
 def main():
     wait_for_server()
@@ -215,6 +258,6 @@ def main():
         remaining = [s["step"] for s in final if not s["done"]]
         log.warning(f"Onboarding incomplete. Remaining steps: {remaining}")
 
+
 if __name__ == "__main__":
     main()
-

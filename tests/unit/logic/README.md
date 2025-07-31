@@ -21,9 +21,7 @@ These tests validate **pure Python automation logic** without any Home Assistant
 # Testing pure logic function
 def test_should_turn_on_evening_lights():
     result = should_turn_on_evening_lights(
-        current_time=time(18, 30),
-        is_after_sunset=True,
-        light_state="off"
+        current_time=time(18, 30), is_after_sunset=True, light_state="off"
     )
     assert result is True  # Light should turn on
 ```
