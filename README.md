@@ -188,8 +188,7 @@ deactivate
 │   ├── docker/                # Docker configuration for tests
 │   ├── ui/                    # UI tests (future)
 │   └── api/                   # API tests
-├── scripts/
-│   └── run_tests.py           # Test runner script
+├── scripts/                    # Utility scripts
 ├── reports/                    # Test reports and coverage
 ├── Makefile                    # Build automation
 └── pyproject.toml               # Project config (includes pytest settings)

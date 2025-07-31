@@ -16,6 +16,7 @@ markers = [
     "integration: Integration tests (requires running HA)",
     "ui: UI tests (requires browser and HA)",
     "api: API tests (requires HA)",
+    "e2e: End-to-end tests (full stack with docker-compose)",
     "slow: Tests that take >10 seconds",
 ]
 addopts = [

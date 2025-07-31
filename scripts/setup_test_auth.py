@@ -131,7 +131,7 @@ def main():
     
     # Option 2: Use bypass auth for testing (recommended)
     print("\n🔧 Recommended: Use bypass auth for testing")
-    print("Add this to your tests/docker/config/configuration.yaml:")
+    print("Add this to your tests/e2e/docker/config/configuration.yaml:")
     print("\nhomeassistant:")
     print("  auth_providers:")
     print("    - type: bypass")

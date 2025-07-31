@@ -4,7 +4,7 @@
 set -e
 
 MODE=${1:-bypass}
-CONFIG_DIR="tests/docker/config"
+CONFIG_DIR="tests/e2e/docker/config"
 
 echo "🔐 Switching Home Assistant auth mode to: $MODE"
 
