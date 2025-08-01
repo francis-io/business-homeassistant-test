@@ -12,7 +12,7 @@ help:
 # Clean all containers, test artifacts, and cache files
 clean:
     @echo "Cleaning up..."
-    docker-compose -f {{docker_compose_e2e}} down -v
+    docker-compose -f {{docker_compose_e2e}} down -v 2>/dev/null || true
     rm -rf {{reports_dir}}/* {{project_root}}/.pytest_cache {{project_root}}/.coverage
     find {{project_root}} -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
     find {{project_root}} -type f -name "*.pyc" -delete

@@ -36,7 +36,7 @@ start:
 # Stop and remove all Docker containers
 stop:
     @echo "Stopping and removing all containers..."
-    docker-compose -f {{docker_compose_e2e}} down --remove-orphans
+    docker-compose -f {{docker_compose_e2e}} down --remove-orphans 2>/dev/null || true
 
 # Restart Home Assistant and test containers
 restart: stop start
@@ -44,7 +44,7 @@ restart: stop start
 # Start with fresh HA instance (removes all data)
 start-clean: stop
     @echo "Removing Home Assistant volumes..."
-    docker-compose -f {{docker_compose_e2e}} down -v
+    docker-compose -f {{docker_compose_e2e}} down -v 2>/dev/null || true
     @just docker::start
 
 # Check Home Assistant health status
@@ -95,8 +95,8 @@ status:
 # Clean up containers and artifacts
 clean:
     @echo "Cleaning up Docker containers and volumes..."
-    docker-compose -f {{docker_compose_e2e}} down -v --remove-orphans
-    docker-compose -f {{docker_compose_ui}} down -v --remove-orphans
+    docker-compose -f {{docker_compose_e2e}} down -v --remove-orphans 2>/dev/null || true
+    docker-compose -f {{docker_compose_ui}} down -v --remove-orphans 2>/dev/null || true
     @echo "Docker cleanup complete!"
 
 # Start all containers in detached mode
@@ -105,7 +105,7 @@ dc-up:
 
 # Stop all containers
 dc-down:
-    docker-compose -f {{docker_compose_e2e}} down
+    docker-compose -f {{docker_compose_e2e}} down 2>/dev/null || true
 
 # Show all container logs (follow mode)
 dc-logs:

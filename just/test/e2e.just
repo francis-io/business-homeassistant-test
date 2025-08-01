@@ -11,12 +11,12 @@ reports_dir := project_root + "/reports"
     @start_time=$(date +%s); \
     echo "Cleaning up any existing test containers..."; \
     docker ps -a --filter "name=home-assistant-test-" --format "{{{{.Names}}}}" | xargs -r docker rm -f 2>/dev/null || true; \
-    docker-compose -f {{docker_compose_e2e}} down --volumes --remove-orphans; \
+    docker-compose -f {{docker_compose_e2e}} down --volumes --remove-orphans 2>/dev/null || true; \
     echo "Starting fresh E2E test run..."; \
     docker-compose -f {{docker_compose_e2e}} run --rm home-assistant-test-runner-e2e || exit_code=$?; \
     echo "Cleaning up test containers..."; \
     docker ps -a --filter "name=home-assistant-test-" --format "{{{{.Names}}}}" | xargs -r docker rm -f 2>/dev/null || true; \
-    docker-compose -f {{docker_compose_e2e}} down --volumes --remove-orphans; \
+    docker-compose -f {{docker_compose_e2e}} down --volumes --remove-orphans 2>/dev/null || true; \
     end_time=$(date +%s); \
     duration=$((end_time - start_time)); \
     echo ""; \
@@ -52,7 +52,7 @@ reports_dir := project_root + "/reports"
 @clean:
     echo "Cleaning up E2E test containers..."
     docker ps -a --filter "name=home-assistant-test-" --format "{{{{.Names}}}}" | xargs -r docker rm -f 2>/dev/null || true
-    docker-compose -f {{docker_compose_e2e}} down --volumes --remove-orphans
+    docker-compose -f {{docker_compose_e2e}} down --volumes --remove-orphans 2>/dev/null || true
     echo "Cleanup complete!"
 
 # Show E2E container status

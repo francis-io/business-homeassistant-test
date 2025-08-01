@@ -131,6 +131,7 @@ def main():
     subprocess.run(
         ["docker-compose", "-f", "tests/e2e/docker/docker-compose.yml", "down"],
         capture_output=True,
+        stderr=subprocess.DEVNULL,
     )
 
     times = []

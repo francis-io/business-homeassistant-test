@@ -3,7 +3,6 @@
 import os
 import sys
 import time
-from pathlib import Path
 
 import requests
 
@@ -85,35 +84,11 @@ def create_auth_token(base_url, username, password):
 
 
 def save_token_to_env(token):
-    """Save token to .env file."""
-    env_file = Path(".env")
-
-    # Read existing .env or create from example
-    if env_file.exists():
-        content = env_file.read_text()
-    else:
-        example_file = Path(".env.example")
-        if example_file.exists():
-            content = example_file.read_text()
-        else:
-            content = ""
-
-    # Update or add token
-    lines = content.split("\n")
-    token_found = False
-
-    for i, line in enumerate(lines):
-        if line.startswith("HA_TEST_TOKEN="):
-            lines[i] = f"HA_TEST_TOKEN={token}"
-            token_found = True
-            break
-
-    if not token_found:
-        lines.append(f"HA_TEST_TOKEN={token}")
-
-    # Write back
-    env_file.write_text("\n".join(lines))
-    print(f"✅ Token saved to {env_file}")
+    """Display token for environment variable configuration."""
+    print("\n✅ Token generated successfully!")
+    print("\n📋 Set the environment variable:")
+    print(f"   export HA_TEST_TOKEN='{token}'")
+    print("\n💡 To make it permanent, add to your shell profile (~/.bashrc, ~/.zshrc, etc.)")
 
 
 def main():
@@ -144,7 +119,6 @@ def main():
     print("4. Go to Profile -> Long-Lived Access Tokens")
     print("5. Create token and run:")
     print("   export HA_TEST_TOKEN='your-token-here'")
-    print("   # Or add to .env file")
 
     return 0
 

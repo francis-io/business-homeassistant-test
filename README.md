@@ -418,8 +418,6 @@ export HA_TEST_TOKEN=your_token_here  # Only needed if using token auth
 export HA_USE_BYPASS_AUTH=true       # Set to false for token auth
 ```
 
-Or create a `.env` file in the project root with the same variables.
-
 ## Writing Tests
 
 ### Unit Test Example
@@ -555,7 +553,7 @@ The framework generates JUnit XML reports suitable for CI systems:
    - Common cause: Invalid configuration.yaml syntax or settings
 1. **Tests timing out**: Increase timeout in `pyproject.toml` under `[tool.pytest.ini_options]`
 1. **Permission errors**: Ensure Docker has necessary permissions
-1. **Token issues**: Regenerate token and update `.env`
+1. **Token issues**: Regenerate token and update environment variables
 
 ### Clean Environment
 

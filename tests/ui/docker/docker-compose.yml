@@ -74,5 +74,6 @@ services:
              fi &&
              export PYTEST_SCREENSHOT_DIR=/reports/$${RUN_DIR} &&
              python -m pytest tests/ui --ignore=tests/ui/docker $${PYTEST_ARGS} &&
-             echo \"RUN_DIR=$${RUN_DIR}\" > /reports/last_report.txt || true"
+             (echo \"RUN_DIR=$${RUN_DIR}\" > /reports/last_report.txt 2>/dev/null || \\
+              echo \"Warning: Could not write last_report.txt (permission denied)\")"
     restart: "no"

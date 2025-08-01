@@ -62,5 +62,6 @@ services:
              export PYTEST_SCREENSHOT_DIR=/reports/$${RUN_DIR} &&
              python -m pytest tests/e2e -v --tb=long \\
                --ignore=tests/e2e/docker --junit-xml=/reports/$${RUN_DIR}/results.xml &&
-             echo \"RUN_DIR=$${RUN_DIR}\" > /reports/last_report.txt"
+             (echo \"RUN_DIR=$${RUN_DIR}\" > /reports/last_report.txt 2>/dev/null || \\
+              echo \"Warning: Could not write last_report.txt (permission denied)\")"
     restart: "no"

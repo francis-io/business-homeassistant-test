@@ -24,7 +24,6 @@ responses
 
 # Utilities
 pyyaml
-python-dotenv
 rich
 
 # Code quality
