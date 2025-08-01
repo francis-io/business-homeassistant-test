@@ -18,16 +18,16 @@ class TestExampleUI:
         assert "Home Assistant" in title or "Loading" in title
 
     @pytest.mark.ui
-    def test_take_screenshot(self, page: Page, ha_url: str):
+    def test_take_screenshot(self, page: Page, ha_url: str, save_screenshot):
         """Test taking a screenshot of Home Assistant."""
         # Navigate to Home Assistant
         page.goto(ha_url, wait_until="networkidle")
 
-        # Take a screenshot
-        page.screenshot(path="/reports/ha_screenshot.png")
+        # Take a screenshot using the fixture
+        screenshot_path = save_screenshot(page, "ha_screenshot")
 
-        # Verify screenshot was taken (file will exist)
-        assert True, "Screenshot taken successfully"
+        # Verify screenshot was taken
+        assert screenshot_path, f"Screenshot saved to {screenshot_path}"
 
     @pytest.mark.ui
     def test_page_content(self, page: Page, ha_url: str):

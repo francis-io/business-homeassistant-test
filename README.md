@@ -34,6 +34,8 @@ Test automation behavior using mocked Home Assistant components:
 - 📊 **Coverage Reports**: HTML coverage reports with detailed metrics
 - 🔄 **CI/CD Ready**: JUnit XML output for CI integration
 - 🎯 **Specific Scenarios**: Test time-based automations, notifications, and zone entry
+- 📸 **UI Testing**: Playwright-based browser automation with screenshot support
+- 📁 **Organized Output**: Timestamped directories for test artifacts and screenshots
 
 ## Quick Start
 
@@ -41,7 +43,8 @@ Test automation behavior using mocked Home Assistant components:
 
 - Docker and Docker Compose
 - Python 3.11+
-- Make (optional but recommended)
+- Just command runner (https://github.com/casey/just)
+- Make (optional, for backward compatibility)
 - UV package manager (for Python dependency management)
 
 ### Setup
@@ -52,13 +55,13 @@ Test automation behavior using mocked Home Assistant components:
 
    ```bash
    # For unit tests only
-   make setup
+   just python::setup
 
    # For unit + integration tests (includes Home Assistant)
-   make setup-integration
+   just python::setup-integration
 
-   # For all test types (future E2E support)
-   make setup-all
+   # For all test types (includes E2E and UI support)
+   just python::setup-all
    ```
 
    This will:
@@ -70,26 +73,30 @@ Test automation behavior using mocked Home Assistant components:
 1. Build Docker containers:
 
    ```bash
-   make build
+   just docker::build
    ```
 
 1. Start Home Assistant:
 
    ```bash
-   make start
+   just docker::start
    ```
 
    The system will automatically wait for Home Assistant to be healthy before proceeding. You can check the health status anytime with:
 
    ```bash
-   make healthcheck
+   just docker::healthcheck
    ```
 
 1. Run all tests:
 
    ```bash
+   just test
+   # or
    make test
    ```
+
+   **Note**: `just` and `make` commands are interchangeable throughout this project!
 
 ## Test Scenarios
 
@@ -113,27 +120,123 @@ This framework includes tests for three common Home Assistant automation pattern
 - Time-based conditions (evening only)
 - Multiple actions: lights, climate, notifications
 
-## Running Tests
+## UI Testing
 
-### Using Make (Recommended)
+The framework includes Playwright-based UI testing capabilities:
+
+### Features
+
+- **Browser Automation**: Test Home Assistant's web interface
+- **Screenshot Support**: Automatic screenshots on test failure
+- **Parallel Execution**: Run UI tests in parallel for faster feedback
+- **Debug Mode**: Step through tests with visible browser and slow motion
+- **Docker Container**: Pre-configured container with all Playwright dependencies
+
+### Running UI Tests
 
 ```bash
-# Run all tests (unit, integration, e2e, ui)
+# Run all UI tests (headless)
+just test::ui
+
+# Run with visible browser
+just test::ui::headed
+
+# Debug mode (slow motion, single thread)
+just test::ui::debug
+
+# Screenshots are saved to:
+# reports/YYYY-MM-DD_HH-MM-SS_ui/
+```
+
+### Writing UI Tests
+
+```python
+@pytest.mark.ui
+def test_home_assistant_navigation(page, ha_url, save_screenshot):
+    """Test navigating Home Assistant UI."""
+    # Navigate to Home Assistant
+    page.goto(ha_url, wait_until="networkidle")
+
+    # Take a screenshot
+    save_screenshot(page, "main_page")
+
+    # Interact with the UI
+    page.click("text=Dashboard")
+
+    # Verify navigation
+    assert "Dashboard" in page.title()
+```
+
+The `save_screenshot` fixture automatically saves screenshots to the test run's directory. Failed tests automatically capture screenshots for debugging.
+
+## Running Tests
+
+### Using Just or Make
+
+Just and Make are interchangeable - use whichever you prefer:
+
+```bash
+# Run all tests (both commands do the same thing)
+just test
 make test
 
-# Run specific test types
-make test:unit          # Unit tests only (logic + mock)
-make test:unit:logic    # Logic tests only
-make test:unit:mock     # Mock tests only
-make test:integration   # Integration tests (in-memory HA)
-make test:e2e           # End-to-end tests (Docker)
-make test:ui            # UI tests with Playwright (Docker)
-make test:ui:headed     # UI tests with visible browser
-make test:ui:debug      # UI tests in debug mode
+# Run specific test types (just/make are interchangeable)
+just test::unit             # Unit tests only (logic + mock)
+make test::unit             # Same as above
+
+just test::unit::logic      # Logic tests only
+make test::unit::logic      # Same as above
+
+just test::integration      # Integration tests (in-memory HA)
+make test::integration      # Same as above
+
+just test::e2e              # End-to-end tests (Docker)
+make test::e2e              # Same as above
+
+just test::ui               # UI tests with Playwright (Docker)
+make test::ui               # Same as above
+
+just test::ui::headed       # UI tests with visible browser
+make test::ui::headed       # Same as above
 
 # Watch mode for development
-make test-watch
+just test::watch
+make test::watch
+
+# Get help for any module (both work)
+just test::help             # Help for all test commands
+make test::help             # Same as above
+
+just test::unit::help       # Help for unit test commands
+make test::unit::help       # Same as above
 ```
+
+### Test Output Organization
+
+Test results are organized in timestamped directories for better tracking:
+
+```
+reports/
+├── 2025-08-01_14-30-45_unit/      # Unit test run
+│   └── results.xml
+├── 2025-08-01_14-32-10_integration/ # Integration test run
+│   └── results.xml
+├── 2025-08-01_14-35-20_e2e/       # E2E test run
+│   └── results.xml
+├── 2025-08-01_14-40-15_ui/        # UI test run
+│   ├── results.xml
+│   ├── test_basic_navigation.png    # Screenshot from test
+│   └── failure_test_example.png     # Automatic failure screenshot
+└── last_report.txt                  # Points to most recent test run
+```
+
+Features:
+
+- **Timestamped directories**: Each test run creates a unique directory
+- **Format**: `YYYY-MM-DD_HH-MM-SS_testtype` for chronological sorting
+- **Screenshots**: UI and E2E tests save screenshots in their run directory
+- **Automatic failure screenshots**: Failed tests automatically capture screenshots
+- **Last report tracking**: `last_report.txt` shows the most recent test directory
 
 ### Using Docker Compose
 
@@ -172,7 +275,7 @@ pytest tests/unit -v
 pytest -k "test_evening_lights" -v
 
 # Update dependencies
-make env-update
+just python::env-update
 
 # Deactivate when done
 deactivate
@@ -185,6 +288,57 @@ This project uses GitHub Actions for continuous integration:
 - **E2E Tests**: Automatically run on every pull request
 - **Required Checks**: E2E tests must pass before merging
 - **Test Reports**: Results are saved as artifacts in GitHub Actions
+
+## Build System
+
+This project uses **Just** as the primary build tool with modular organization:
+
+### Just Module Structure
+
+The build system is organized into modules for better maintainability:
+
+```
+justfile                    # Main entry point
+├── just/
+│   ├── common.just        # Shared variables and settings
+│   ├── test.just          # Test module with submodules
+│   │   ├── unit.just      # Unit test commands
+│   │   ├── integration.just # Integration test commands
+│   │   ├── e2e.just       # E2E test commands
+│   │   └── ui.just        # UI test commands
+│   ├── docker.just        # Docker management
+│   ├── python.just        # Python environment management
+│   ├── quality.just       # Code quality tools
+│   └── dev.just           # Development utilities
+```
+
+### Module Navigation
+
+- Use `::` to navigate modules: `just test::unit::logic`
+- Each module has a default command that runs when called without a subcommand
+- Get help for any module: `just test::help`, `just docker::help`
+
+### Make and Just Interoperability
+
+**Make and Just are now fully interchangeable!** The Makefile acts as a transparent proxy to Just:
+
+```bash
+# These commands are identical:
+make test::unit         =  just test::unit
+make docker::build      =  just docker::build
+make quality::lint      =  just quality::lint
+make test::ui::headed   =  just test::ui::headed
+make python::setup      =  just python::setup
+```
+
+This means:
+
+- Use whichever tool you prefer - they work identically
+- No need to remember different syntaxes
+- All new Just commands automatically work with Make
+- Zero maintenance - the Makefile dynamically forwards everything
+
+**Note**: The old single-colon syntax (`make test:unit`) is no longer supported. Use double-colons (`make test::unit`) for module commands.
 
 ## Project Structure
 
@@ -202,11 +356,12 @@ This project uses GitHub Actions for continuous integration:
 │   ├── common.py              # HA-style test utilities
 │   ├── conftest.py            # Pytest fixtures
 │   ├── docker/                # Docker configuration for tests
-│   ├── ui/                    # UI tests (future)
+│   ├── ui/                    # UI tests with Playwright
 │   └── api/                   # API tests
 ├── scripts/                    # Utility scripts
-├── reports/                    # Test reports and coverage
-├── Makefile                    # Build automation
+├── reports/                    # Test reports and coverage (timestamped)
+├── justfile                    # Primary build tool
+├── Makefile                    # Legacy support
 └── pyproject.toml               # Project config (includes pytest settings)
 ```
 
@@ -222,11 +377,11 @@ The default and recommended approach - no tokens needed!
 
 ```bash
 # Already configured during setup
-make setup
+just python::setup
 
 # Or switch manually
-make auth-bypass
-make restart
+just dev::auth-bypass
+just docker::restart
 ```
 
 With bypass auth:
@@ -242,11 +397,11 @@ For testing with real authentication:
 
 ```bash
 # Switch to token mode
-make auth-token
-make restart
+just dev::auth-token
+just docker::restart
 
 # Generate token
-make generate-token
+just dev::generate-token
 # Follow the instructions to create a token
 
 # Set in environment
@@ -320,9 +475,9 @@ This project uses **UV** for fast Python dependency management:
 
 ```bash
 # All Python commands use the .venv created by UV
-make test:unit      # Runs: .venv/bin/pytest tests/unit
-make lint           # Runs: .venv/bin/flake8
-make format         # Runs: .venv/bin/black
+just test::unit      # Runs: .venv/bin/pytest tests/unit
+just quality::lint   # Runs: .venv/bin/flake8
+just quality::format # Runs: .venv/bin/black
 
 # Work directly in the Python environment
 source .venv/bin/activate
@@ -341,29 +496,35 @@ Benefits of UV:
 
 ```bash
 # Run linters
-make lint
+just quality::lint
 
 # Format code
-make format
+just quality::format
 
 # Generate coverage report
-make coverage
+just quality::coverage
 
 # Open coverage report in browser
-make report
+just quality::report
+
+# Run pre-commit hooks
+just quality::pre-commit
 ```
 
 ### Debugging
 
 ```bash
 # View Home Assistant logs
-make logs
+just docker::logs
 
 # Shell into test container
-make shell
+just docker::shell
 
 # Shell into HA container
-make ha-shell
+just docker::ha-shell
+
+# Clean up containers and artifacts
+just docker::clean
 ```
 
 ## CI/CD Integration
@@ -400,7 +561,11 @@ The framework generates JUnit XML reports suitable for CI systems:
 
 ```bash
 # Remove all containers and test artifacts
-make clean
+just docker::clean
+
+# Clean specific components
+just python::env-clean   # Remove Python environment
+just quality::clean      # Remove coverage reports
 ```
 
 ## Contributing

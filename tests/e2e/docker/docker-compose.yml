@@ -55,9 +55,12 @@ services:
       - HA_URL=http://${SERVER_CONTAINER}:${HA_PORT}
       # - TZ=UTC
     command: >
-      sh -c "TIMESTAMP=$$(date '+%Y%m%d_%H%M%S') &&
-             REPORT_FILE=\"e2e_$${TIMESTAMP}_results.xml\" &&
-             echo \"Running E2E tests at $$(date '+%Y-%m-%d %H:%M:%S')...\" &&
-             python -m pytest tests/e2e -v --tb=long --ignore=tests/e2e/docker --junit-xml=/reports/$${REPORT_FILE} &&
-             echo \"REPORT_FILE=$${REPORT_FILE}\" > /reports/.last_report"
+      sh -c "TIMESTAMP=$$(date '+%Y-%m-%d_%H-%M-%S') &&
+             RUN_DIR=\"$${TIMESTAMP}_e2e\" &&
+             mkdir -p /reports/$${RUN_DIR} &&
+             echo \"Running E2E tests at $${TIMESTAMP}...\" &&
+             export PYTEST_SCREENSHOT_DIR=/reports/$${RUN_DIR} &&
+             python -m pytest tests/e2e -v --tb=long \\
+               --ignore=tests/e2e/docker --junit-xml=/reports/$${RUN_DIR}/results.xml &&
+             echo \"RUN_DIR=$${RUN_DIR}\" > /reports/last_report.txt"
     restart: "no"

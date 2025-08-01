@@ -61,17 +61,18 @@ services:
       - DEBUG=${DEBUG:-false}
       - SLOWMO=${SLOWMO:-0}
     command: >
-      sh -c "TIMESTAMP=$$(date '+%Y%m%d_%H%M%S') &&
-             REPORT_FILE=\"ui_$${TIMESTAMP}_results.xml\" &&
-             echo \"Running UI tests at $$(date '+%Y-%m-%d %H:%M:%S')...\" &&
-             PYTEST_ARGS='-v --tb=long --junit-xml=/reports/$${REPORT_FILE}' &&
+      sh -c "TIMESTAMP=$$(date '+%Y-%m-%d_%H-%M-%S') &&
+             RUN_DIR=\"$${TIMESTAMP}_ui\" &&
+             mkdir -p /reports/$${RUN_DIR} &&
+             echo \"Running UI tests at $${TIMESTAMP}...\" &&
+             PYTEST_ARGS=\"-v --tb=long --junit-xml=/reports/$${RUN_DIR}/results.xml\" &&
              if [ \"$${HEADED}\" = \"true\" ]; then PYTEST_ARGS=\"$${PYTEST_ARGS} --headed\"; fi &&
              if [ \"$${DEBUG}\" = \"true\" ]; then
                PYTEST_ARGS=\"$${PYTEST_ARGS} --slowmo=$${SLOWMO} -n 0\";
              else
                PYTEST_ARGS=\"$${PYTEST_ARGS} -n 2\";
              fi &&
+             export PYTEST_SCREENSHOT_DIR=/reports/$${RUN_DIR} &&
              python -m pytest tests/ui --ignore=tests/ui/docker $${PYTEST_ARGS} &&
-             echo \"REPORT_FILE=$${REPORT_FILE}\" > /reports/.last_report || true"
+             echo \"RUN_DIR=$${RUN_DIR}\" > /reports/last_report.txt || true"
     restart: "no"
-    user: testuser
