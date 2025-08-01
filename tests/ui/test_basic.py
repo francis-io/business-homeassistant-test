@@ -4,7 +4,7 @@ import pytest
 
 
 @pytest.mark.ui
-def test_basic_navigation(page, ha_url):
+def test_basic_navigation(page, ha_url, save_screenshot):
     """Test basic navigation to Home Assistant."""
     # Navigate to Home Assistant
     page.goto(ha_url, wait_until="networkidle")
@@ -13,7 +13,7 @@ def test_basic_navigation(page, ha_url):
     assert "Home Assistant" in page.title() or "Loading" in page.title()
 
     # Take a screenshot for debugging
-    page.screenshot(path="/reports/test_basic_navigation.png")
+    save_screenshot(page, "test_basic_navigation")
     print(f"Page title: {page.title()}")
 
 

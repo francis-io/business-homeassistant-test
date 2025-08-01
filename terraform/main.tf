@@ -42,6 +42,9 @@ resource "github_repository" "business_homeassistant_test" {
 
   # Topics/tags
   topics = ["home-assistant", "testing", "automation"]
+
+  # Automatically delete branches after merge
+  delete_branch_on_merge = true
 }
 
 # Output the repository URLs

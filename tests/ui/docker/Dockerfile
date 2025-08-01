@@ -7,7 +7,7 @@ RUN apt-get update && apt-get install -y \
     curl \
     wget \
     gnupg \
-    # Required for Chromium
+    # Required for Chromium and other browsers
     libnss3 \
     libnspr4 \
     libatk1.0-0 \
@@ -17,17 +17,30 @@ RUN apt-get update && apt-get install -y \
     libdbus-1-3 \
     libatspi2.0-0 \
     libx11-6 \
+    libx11-xcb1 \
+    libxcb1 \
     libxcomposite1 \
+    libxcursor1 \
     libxdamage1 \
     libxext6 \
     libxfixes3 \
+    libxi6 \
     libxrandr2 \
+    libxrender1 \
+    libxss1 \
+    libxtst6 \
     libgbm1 \
-    libxcb1 \
     libxkbcommon0 \
     libpango-1.0-0 \
+    libpangocairo-1.0-0 \
     libcairo2 \
+    libcairo-gobject2 \
     libasound2 \
+    libgtk-3-0 \
+    libgdk-pixbuf2.0-0 \
+    libglib2.0-0 \
+    # Additional X11 dependencies
+    libxshmfence1 \
     # Clean up
     && rm -rf /var/lib/apt/lists/*
 
